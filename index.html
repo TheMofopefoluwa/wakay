@@ -45,6 +45,7 @@ textarea{width:100%;min-height:54px;margin-top:6px}
 
   <div id="v1">
     <div class="row"><input id="q" placeholder="Search within your matches"><select id="s"><option value="">All sources</option><option value="__p">★ Priority 4 only</option></select></div>
+    <label class="m"><input type="checkbox" id="all" style="flex:none;min-width:0"> Search all jobs (ignore my profile filters)</label>
     <p class="sub" id="sub"></p><div id="list"></div><div class="row"><button id="more" class="hide">Show more</button></div>
   </div>
 
@@ -76,8 +77,8 @@ function match(j){
 // ---------- jobs list ----------
 function render(){
   const q=$("q").value.toLowerCase(),s=$("s").value;
-  const L=D.filter(j=>match(j)&&(!s||(s==="__p"?j.priority:j.source===s))&&(j.title+j.company).toLowerCase().includes(q));
-  $("sub").textContent=`${L.length} matching of ${D.length} jobs. Last checked ${ago(upd)}.`;
+  const L=D.filter(j=>($("all").checked||match(j))&&(!s||(s==="__p"?j.priority:j.source===s))&&(j.title+j.company).toLowerCase().includes(q));
+  $("sub").textContent=`${L.length} ${$("all").checked?"results":"matching"} of ${D.length} jobs. Last checked ${ago(upd)}.`;
   $("list").innerHTML=L.slice(0,shown).map(j=>`<div class="job ${j.first_seen>last?"new":""}"><div>
     <a href="${esc(safe(j.url))}" target="_blank" rel="noopener">${esc(j.title)}</a>${j.first_seen>last?' <span class="n">New</span>':""}
     <div class="m">${esc(j.company)} · ${j.priority?"★ ":""}${esc(j.source)} · ${esc(j.location.trim()||"Location not listed")} · found ${ago(j.first_seen)}</div></div>
@@ -87,7 +88,7 @@ function render(){
 $("list").onclick=async e=>{const u=e.target.dataset?.u;if(!u||apps[u])return;const j=byUrl[u];
   const {data,error}=await sb.from("applications").upsert({user_id:user.id,job_url:u,title:j.title,company:j.company,source:j.source,location:j.location,status:"Saved"},{onConflict:"user_id,job_url"}).select().single();
   if(error)return say(error.message);apps[u]=data;render()};
-$("more").onclick=()=>{shown+=100;render()};$("q").oninput=$("s").onchange=()=>{shown=100;render()};
+$("more").onclick=()=>{shown+=100;render()};$("q").oninput=$("s").onchange=$("all").onchange=()=>{shown=100;render()};
 
 // ---------- tracker ----------
 function renderApps(){
