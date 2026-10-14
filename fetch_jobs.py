@@ -147,13 +147,27 @@ def himalayas(_=None):
 def jooble(_=None):
     key = os.environ.get("JOOBLE_KEY")
     if not key: return
-    for kw in ("software developer", "designer", "virtual assistant", "social media manager", "content creator", "customer support", "marketing"):
+    for kw in ("software developer", "graphic designer", "virtual assistant", "social media manager", "content creator", "content writer", "customer support", "marketing", "video editor", "data analyst"):
         body = json.dumps({"keywords": kw, "location": "Nigeria"}).encode()
         req = urllib.request.Request(f"https://jooble.org/api/{key}", body, {"Content-Type": "application/json"})
         for j in json.load(urllib.request.urlopen(req, timeout=25)).get("jobs", []):
-            yield dict(title=j.get("title", ""), company=j.get("company", ""), location=(j.get("location") or "") + " Remote", url=j.get("link", ""), source="Jooble")
+            yield dict(title=j.get("title", ""), company=j.get("company", ""), location=(j.get("location") or "") + " Nigeria", url=j.get("link", ""), source="Jooble")
 
-EXTRA = {"jobicy": jobicy, "themuse": themuse, "himalayas": himalayas, "jooble": jooble, "remotive": remotive, "remoteok": remoteok, "weworkremotely": weworkremotely, "arbeitnow": arbeitnow}
+def rss_feeds(_=None):
+    """Any RSS feed you list under rss_feeds in config.json."""
+    for f in cfg.get("rss_feeds", []):
+        try:
+            root = ET.fromstring(get(f["url"], as_json=False))
+            for it in root.iter("item"):
+                yield dict(title=(it.findtext("title") or "").strip(), company=f.get("company") or f["name"],
+                           location=f.get("location", ""), url=(it.findtext("link") or "").strip(), source=f["name"])
+        except Exception as e: print("rss", f["name"], e)
+
+def workingnomads(_=None):
+    for j in get("https://www.workingnomads.com/api/exposed_jobs/"):
+        yield dict(title=j.get("title", ""), company=j.get("company_name", ""), location="Remote " + str(j.get("location") or ""), url=j.get("url", ""), source="WorkingNomads")
+
+EXTRA = {"rss": rss_feeds, "workingnomads": workingnomads, "jobicy": jobicy, "themuse": themuse, "himalayas": himalayas, "jooble": jooble, "remotive": remotive, "remoteok": remoteok, "weworkremotely": weworkremotely, "arbeitnow": arbeitnow}
 PRIORITY = {"Ashby", "Greenhouse", "Lever", "Twine"}
 
 def keep(j):
