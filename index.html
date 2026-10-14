@@ -19,7 +19,10 @@ button{cursor:pointer}button.p{background:var(--acc);color:#fff;border-color:var
 .job.new{background:var(--new)}.job a{color:inherit;font-weight:600;text-decoration:none}.job a:hover{text-decoration:underline}
 .job button{flex:0 0 auto;min-width:0}.n{color:var(--acc);font-weight:600;font-size:.85rem}
 textarea{width:100%;min-height:54px;margin-top:6px}
-.box a{color:var(--fg)}#msg{color:var(--acc);min-height:1.4em}
+.box a{color:var(--fg)}
+input[type=checkbox]{padding:0;width:auto;min-width:0;flex:none;margin-right:8px}
+.chk label{display:block;margin:6px 0}
+.tg{display:inline-block;border:1px solid var(--line);border-radius:10px;padding:0 8px;margin-left:6px;font-size:.78rem;color:var(--mut)}#msg{color:var(--acc);min-height:1.4em}
 </style></head><body><main>
 <header><h1>Wakay</h1><div class="m"><span id="who"></span> <button id="out" class="hide">Log out</button></div></header>
 <p id="msg"></p>
@@ -38,13 +41,20 @@ textarea{width:100%;min-height:54px;margin-top:6px}
     <div class="row"><input id="kw" placeholder="Roles, comma separated: e.g. graphic designer, ui designer, frontend"></div>
     <div class="row">
       <select id="lv"><option value="any">Any level</option><option value="junior">Junior / entry</option><option value="mid">Mid level</option><option value="senior">Senior / lead</option></select>
-      <select id="rg"><option value="ng">Open to Nigeria (worldwide, Africa, EMEA)</option><option value="any">Show all locations</option></select>
+    </div>
+    <div class="m" style="margin:12px 0 4px">Show me jobs open to:</div>
+    <div id="rg" class="chk">
+      <label><input type="checkbox" value="ng"> Nigeria (based in Nigeria)</label>
+      <label><input type="checkbox" value="africa"> Africa / EMEA</label>
+      <label><input type="checkbox" value="world"> Worldwide / anywhere</label>
+      <label><input type="checkbox" value="unspecified"> Remote, country not stated</label>
+      <label><input type="checkbox" value="other"> Other countries (restricted elsewhere)</label>
     </div>
     <div class="row"><button id="sv" class="p">Save profile</button></div>
   </div>
 
   <div id="v1">
-    <div class="row"><input id="q" placeholder="Search within your matches"><select id="s"><option value="">All sources</option><option value="__p">★ Priority 4 only</option></select></div>
+    <div class="row"><input id="q" placeholder="Search within your matches"><select id="s"><option value="">All sources</option><option value="__p">★ Priority 4 only</option></select><select id="lc"><option value="">My locations</option><option value="ng">Nigeria only</option><option value="africa">Africa / EMEA only</option><option value="world">Worldwide only</option><option value="unspecified">Remote, country not stated</option><option value="other">Other countries</option></select></div>
     <label class="m"><input type="checkbox" id="all" style="flex:none;min-width:0"> Search all jobs (ignore my profile filters)</label>
     <p class="sub" id="sub"></p><div id="list"></div><div class="row"><button id="more" class="hide">Show more</button></div>
   </div>
@@ -57,38 +67,48 @@ const sb = supabase.createClient("https://qiddlgppfujcsjdlifbv.supabase.co","sb_
 const $=id=>document.getElementById(id), STAT=["Saved","Applied","Replied","Interview","Offer","Rejected"];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safe=u=>/^https?:\/\//i.test(u)?u:"#";
-let uid=null,user=null,prof={keywords:"",level:"any",region:"ng"},apps={},D=[],byUrl={},shown=100,upd="",last="";
+let uid=null,user=null,prof={keywords:"",level:"any",region:"ng,africa,world,unspecified"},apps={},D=[],byUrl={},shown=100,upd="",last="";
 try{last=localStorage.getItem("seen")||""}catch(e){}
 const say=t=>$("msg").textContent=t||"";
 const ago=t=>{const h=(Date.now()-new Date(t))/36e5;return h<1?"just now":h<24?Math.floor(h)+"h ago":Math.floor(h/24)+"d ago"};
 
 // ---------- matching ----------
-const OPEN=/worldwide|anywhere|global|africa|nigeria|lagos|emea|international/i;
+const ALL=["ng","africa","world","unspecified","other"],LB={ng:"Nigeria",africa:"Africa/EMEA",world:"Worldwide",unspecified:"Remote",other:"Restricted"};
+function tags(j){ // which location groups a job belongs to
+  if(j._t)return j._t;
+  const l=j.location.replace(/remote/ig,"").replace(/south africa/ig,"").trim(),t=[];
+  if(/nigeria|lagos|abuja|port harcourt|ibadan|kano/i.test(l))t.push("ng");
+  if(/\bafrica\b|emea/i.test(l))t.push("africa");
+  if(/worldwide|anywhere|global|international/i.test(l))t.push("world");
+  if(!l)t.push("unspecified");
+  return j._t=t.length?t:["other"]}
+function regions(){const r=prof.region;return r==="ng"?["ng","africa","world","unspecified"]:r==="any"?ALL:r.split(",")}
 function lvl(t){t=t.toLowerCase();if(/\b(junior|jr|entry|graduate|trainee|associate)\b/.test(t))return"junior";
   if(/\b(senior|sr|lead|principal|staff|head|director|vp)\b/.test(t))return"senior";return"mid"}
-function match(j){
+function match(j,skipRegion){
   const kws=prof.keywords.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
   const txt=(j.title+" "+j.company).toLowerCase();
   if(kws.length&&!kws.some(k=>txt.includes(k)))return false;
   if(prof.level!=="any"&&lvl(j.title)!==prof.level)return false;
-  if(prof.region==="ng"){const l=j.location.replace(/remote/ig,"").trim();if(l&&!OPEN.test(l))return false}
+  if(!skipRegion){const sel=regions();if(!tags(j).some(x=>sel.includes(x)))return false}
   return true}
+function setRegions(){const sel=regions();document.querySelectorAll("#rg input").forEach(i=>i.checked=sel.includes(i.value))}
 
 // ---------- jobs list ----------
 function render(){
   const q=$("q").value.toLowerCase(),s=$("s").value;
-  const L=D.filter(j=>($("all").checked||match(j))&&(!s||(s==="__p"?j.priority:j.source===s))&&(j.title+j.company).toLowerCase().includes(q));
+  const L=D.filter(j=>($("all").checked||match(j,!!$("lc").value))&&(!$("lc").value||tags(j).includes($("lc").value))&&(!s||(s==="__p"?j.priority:j.source===s))&&(j.title+j.company).toLowerCase().includes(q));
   $("sub").textContent=`${L.length} ${$("all").checked?"results":"matching"} of ${D.length} jobs. Last checked ${ago(upd)}.`;
   $("list").innerHTML=L.slice(0,shown).map(j=>`<div class="job ${j.first_seen>last?"new":""}"><div>
     <a href="${esc(safe(j.url))}" target="_blank" rel="noopener">${esc(j.title)}</a>${j.first_seen>last?' <span class="n">New</span>':""}
-    <div class="m">${esc(j.company)} · ${j.priority?"★ ":""}${esc(j.source)} · ${esc(j.location.trim()||"Location not listed")} · found ${ago(j.first_seen)}</div></div>
+    <div class="m">${esc(j.company)} · ${j.priority?"★ ":""}${esc(j.source)}${tags(j).map(t=>`<span class="tg">${LB[t]}</span>`).join("")} · ${esc(j.location.replace(/\b(remote)(\s+remote)+\b/ig,"Remote").trim()||"Location not listed")} · found ${ago(j.first_seen)}</div></div>
     <button data-u="${esc(j.url)}">${apps[j.url]?"Saved ✓":"Save"}</button></div>`).join("")||"<p class='m'>No matching jobs. Try broader keywords in My profile.</p>";
   $("more").classList.toggle("hide",L.length<=shown);
 }
 $("list").onclick=async e=>{const u=e.target.dataset?.u;if(!u||apps[u])return;const j=byUrl[u];
   const {data,error}=await sb.from("applications").upsert({user_id:user.id,job_url:u,title:j.title,company:j.company,source:j.source,location:j.location,status:"Saved"},{onConflict:"user_id,job_url"}).select().single();
   if(error)return say(error.message);apps[u]=data;render()};
-$("more").onclick=()=>{shown+=100;render()};$("q").oninput=$("s").onchange=$("all").onchange=()=>{shown=100;render()};
+$("more").onclick=()=>{shown+=100;render()};$("q").oninput=$("s").onchange=$("all").onchange=$("lc").onchange=()=>{shown=100;render()};
 
 // ---------- tracker ----------
 function renderApps(){
@@ -108,7 +128,7 @@ $("apps").onclick=async e=>{if(!e.target.matches("[data-rm]"))return;const id=+e
 $("fs").onchange=renderApps;STAT.forEach(s=>$("fs").add(new Option(s,s)));
 
 // ---------- profile ----------
-$("sv").onclick=async()=>{prof={keywords:$("kw").value,level:$("lv").value,region:$("rg").value};
+$("sv").onclick=async()=>{prof={keywords:$("kw").value,level:$("lv").value,region:[...document.querySelectorAll("#rg input:checked")].map(i=>i.value).join(",")};
   const {error}=await sb.from("profiles").upsert({user_id:user.id,...prof,updated_at:new Date().toISOString()});
   say(error?error.message:"Profile saved.");if(!error){shown=100;tab(1)}};
 
@@ -129,7 +149,7 @@ async function start(session){
   if(p.data)prof=p.data;apps={};(a.data||[]).forEach(x=>apps[x.job_url]=x);
   D=j.jobs.sort((x,y)=>(y.priority-x.priority)||(x.first_seen<y.first_seen?1:-1));upd=j.updated;byUrl={};D.forEach(x=>byUrl[x.url]=x);
   [...new Set(D.map(x=>x.source))].forEach(x=>{if(![...$("s").options].some(o=>o.value===x))$("s").add(new Option(x,x))});
-  $("kw").value=prof.keywords;$("lv").value=prof.level;$("rg").value=prof.region;
+  $("kw").value=prof.keywords;$("lv").value=prof.level;setRegions();
   tab(p.data?1:3);if(!p.data)say("Welcome! Tell me what roles you want, then save your profile.");
   try{localStorage.setItem("seen",j.updated)}catch(e){}
 }
