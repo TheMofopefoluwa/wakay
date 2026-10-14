@@ -1,37 +1,136 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Job watcher</title>
+<title>Wakay</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
-:root{--bg:#f7f7f4;--fg:#1c1f23;--mut:#6b7178;--line:#dcdcd6;--acc:#1f5eff;--new:#e8f0ff}
-@media(prefers-color-scheme:dark){:root{--bg:#16181b;--fg:#e8e9ea;--mut:#9aa0a6;--line:#2b2f34;--acc:#7da2ff;--new:#1d2740}}
+:root{--bg:#f7f7f4;--fg:#1c1f23;--mut:#6b7178;--line:#dcdcd6;--acc:#1f5eff;--new:#e8f0ff;--card:#fff}
+@media(prefers-color-scheme:dark){:root{--bg:#16181b;--fg:#e8e9ea;--mut:#9aa0a6;--line:#2b2f34;--acc:#7da2ff;--new:#1d2740;--card:#1c1f23}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}
-main{max-width:760px;margin:0 auto;padding:32px 20px}
-h1{font-size:1.6rem;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 20px}
-.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-input,select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
-input{flex:1;min-width:180px}
-a.job{display:block;padding:14px 12px;border-top:1px solid var(--line);color:inherit;text-decoration:none}
-a.job:hover,a.job:focus-visible{background:var(--new);outline:none}
-.t{font-weight:600}.m{color:var(--mut);font-size:.9rem}.n{color:var(--acc);font-weight:600}
+main{max-width:780px;margin:0 auto;padding:28px 18px}
+h1{font-size:1.6rem;margin:0}.sub,.m{color:var(--mut);font-size:.9rem}.hide{display:none!important}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px}
+input,select,textarea,button{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
+button{cursor:pointer}button.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.row>*{flex:1;min-width:140px}
+.box{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--card);margin:12px 0}
+.tabs button{flex:0 0 auto;min-width:0}.tabs .on{border-color:var(--acc);color:var(--acc)}
+.job{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;padding:12px 8px;border-top:1px solid var(--line)}
+.job.new{background:var(--new)}.job a{color:inherit;font-weight:600;text-decoration:none}.job a:hover{text-decoration:underline}
+.job button{flex:0 0 auto;min-width:0}.n{color:var(--acc);font-weight:600;font-size:.85rem}
+textarea{width:100%;min-height:54px;margin-top:6px}#msg{color:var(--acc);min-height:1.4em}
 </style></head><body><main>
-<h1>Job watcher</h1><p class="sub" id="sub">Loading…</p>
-<div class="bar"><input id="q" placeholder="Filter by title or company"><select id="s"><option value="">All sources</option><option value="__p">Priority 4 only</option></select></div>
-<div id="list"></div></main>
+<header><h1>Wakay</h1><div class="m"><span id="who"></span> <button id="out" class="hide">Log out</button></div></header>
+<p id="msg"></p>
+
+<section id="auth" class="box hide">
+  <b>Log in or create an account</b>
+  <div class="row"><input id="em" type="email" placeholder="Email" autocomplete="email"><input id="pw" type="password" placeholder="Password (6+ characters)" autocomplete="current-password"></div>
+  <div class="row"><button id="in" class="p">Log in</button><button id="up">Create account</button></div>
+</section>
+
+<section id="app" class="hide">
+  <div class="tabs row"><button id="t1" class="on">Jobs</button><button id="t2">My applications</button><button id="t3">My profile</button></div>
+
+  <div id="v3" class="box hide">
+    <b>Which jobs should I show you?</b>
+    <div class="row"><input id="kw" placeholder="Roles, comma separated: e.g. graphic designer, ui designer, frontend"></div>
+    <div class="row">
+      <select id="lv"><option value="any">Any level</option><option value="junior">Junior / entry</option><option value="mid">Mid level</option><option value="senior">Senior / lead</option></select>
+      <select id="rg"><option value="ng">Open to Nigeria (worldwide, Africa, EMEA)</option><option value="any">Show all locations</option></select>
+    </div>
+    <div class="row"><button id="sv" class="p">Save profile</button></div>
+  </div>
+
+  <div id="v1">
+    <div class="row"><input id="q" placeholder="Search within your matches"><select id="s"><option value="">All sources</option><option value="__p">★ Priority 4 only</option></select></div>
+    <p class="sub" id="sub"></p><div id="list"></div><div class="row"><button id="more" class="hide">Show more</button></div>
+  </div>
+
+  <div id="v2" class="hide"><div class="row"><select id="fs"><option value="">All statuses</option></select></div><div id="apps"></div></div>
+</section>
+
 <script>
-let D=[],last=localStorage.getItem("seen")||"";
-const $=id=>document.getElementById(id);
-function ago(t){const h=(Date.now()-new Date(t))/36e5;return h<1?"just now":h<24?Math.floor(h)+"h ago":Math.floor(h/24)+"d ago"}
+const sb = supabase.createClient("https://qiddlgppfujcsjdlifbv.supabase.co","sb_publishable_6_N9DjB9PLiahNUhWpUq5w_UfQXIHnM");
+const $=id=>document.getElementById(id), STAT=["Saved","Applied","Replied","Interview","Offer","Rejected"];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safe=u=>/^https?:\/\//i.test(u)?u:"#";
+let user=null,prof={keywords:"",level:"any",region:"ng"},apps={},D=[],byUrl={},shown=100,upd="",last="";
+try{last=localStorage.getItem("seen")||""}catch(e){}
+const say=t=>$("msg").textContent=t||"";
+const ago=t=>{const h=(Date.now()-new Date(t))/36e5;return h<1?"just now":h<24?Math.floor(h)+"h ago":Math.floor(h/24)+"d ago"};
+
+// ---------- matching ----------
+const OPEN=/worldwide|anywhere|global|africa|nigeria|lagos|emea|international/i;
+function lvl(t){t=t.toLowerCase();if(/\b(junior|jr|entry|graduate|trainee|associate)\b/.test(t))return"junior";
+  if(/\b(senior|sr|lead|principal|staff|head|director|manager|vp)\b/.test(t))return"senior";return"mid"}
+function match(j){
+  const kws=prof.keywords.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
+  const txt=(j.title+" "+j.company).toLowerCase();
+  if(kws.length&&!kws.some(k=>txt.includes(k)))return false;
+  if(prof.level!=="any"&&lvl(j.title)!==prof.level)return false;
+  if(prof.region==="ng"){const l=j.location.replace(/remote/ig,"").trim();if(l&&!OPEN.test(l))return false}
+  return true}
+
+// ---------- jobs list ----------
 function render(){
   const q=$("q").value.toLowerCase(),s=$("s").value;
-  $("list").innerHTML=D.filter(j=>(!s||(s==="__p"?j.priority:j.source===s))&&(j.title+j.company).toLowerCase().includes(q)).map(j=>
-    `<a class="job" href="${j.url}" target="_blank" rel="noopener"><div class="t">${j.title}${j.first_seen>last?' <span class="n">New</span>':''}</div>
-    <div class="m">${j.company} · ${j.priority?"★ ":""}${j.source} · ${j.location.trim()||"Location not listed"} · found ${ago(j.first_seen)}</div></a>`).join("")||"<p class='m'>No matching jobs yet.</p>";
+  const L=D.filter(j=>match(j)&&(!s||(s==="__p"?j.priority:j.source===s))&&(j.title+j.company).toLowerCase().includes(q));
+  $("sub").textContent=`${L.length} matching of ${D.length} jobs. Last checked ${ago(upd)}.`;
+  $("list").innerHTML=L.slice(0,shown).map(j=>`<div class="job ${j.first_seen>last?"new":""}"><div>
+    <a href="${esc(safe(j.url))}" target="_blank" rel="noopener">${esc(j.title)}</a>${j.first_seen>last?' <span class="n">New</span>':""}
+    <div class="m">${esc(j.company)} · ${j.priority?"★ ":""}${esc(j.source)} · ${esc(j.location.trim()||"Location not listed")} · found ${ago(j.first_seen)}</div></div>
+    <button data-u="${esc(j.url)}">${apps[j.url]?"Saved ✓":"Save"}</button></div>`).join("")||"<p class='m'>No matching jobs. Try broader keywords in My profile.</p>";
+  $("more").classList.toggle("hide",L.length<=shown);
 }
-fetch("jobs.json?"+Date.now()).then(r=>r.json()).then(d=>{
-  D=d.jobs.sort((a,b)=>(b.priority-a.priority)||(a.first_seen<b.first_seen?1:-1));[...new Set(D.map(j=>j.source))].forEach(x=>$("s").add(new Option(x,x)));
-  $("sub").textContent=`${D.length} jobs. Last checked ${ago(d.updated)}.`+(d.errors.length?` ${d.errors.length} source(s) failed.`:"");
-  render();try{localStorage.setItem("seen",d.updated)}catch(e){}
-}).catch(()=>$("sub").textContent="jobs.json not found yet. Run the workflow once.");
-$("q").oninput=$("s").onchange=render;
-</script></body></html>
+$("list").onclick=async e=>{const u=e.target.dataset?.u;if(!u||apps[u])return;const j=byUrl[u];
+  const {data,error}=await sb.from("applications").upsert({user_id:user.id,job_url:u,title:j.title,company:j.company,source:j.source,location:j.location,status:"Saved"},{onConflict:"user_id,job_url"}).select().single();
+  if(error)return say(error.message);apps[u]=data;render()};
+$("more").onclick=()=>{shown+=100;render()};$("q").oninput=$("s").onchange=()=>{shown=100;render()};
+
+// ---------- tracker ----------
+function renderApps(){
+  const f=$("fs").value,L=Object.values(apps).filter(a=>!f||a.status===f).sort((a,b)=>a.updated_at<b.updated_at?1:-1);
+  $("apps").innerHTML=L.map(a=>`<div class="box" data-id="${a.id}"><a href="${esc(safe(a.job_url))}" target="_blank" rel="noopener"><b>${esc(a.title)}</b></a>
+    <div class="m">${esc(a.company||"")} · ${esc(a.source||"")}</div>
+    <div class="row"><select data-st>${STAT.map(s=>`<option ${s===a.status?"selected":""}>${s}</option>`).join("")}</select><button data-rm>Remove</button></div>
+    <textarea data-nt placeholder="Notes: contact, dates, what you sent...">${esc(a.notes)}</textarea></div>`).join("")||"<p class='m'>Nothing here yet. Press Save on a job.</p>";
+}
+async function patch(id,fields){const {data,error}=await sb.from("applications").update({...fields,updated_at:new Date().toISOString()}).eq("id",id).select().single();
+  if(error)return say(error.message);apps[data.job_url]=data}
+$("apps").onchange=async e=>{if(e.target.matches("[data-st]")){await patch(+e.target.closest("[data-id]").dataset.id,{status:e.target.value});renderApps()}};
+$("apps").focusout=null;$("apps").addEventListener("focusout",e=>{if(e.target.matches("[data-nt]"))patch(+e.target.closest("[data-id]").dataset.id,{notes:e.target.value})});
+$("apps").onclick=async e=>{if(!e.target.matches("[data-rm]"))return;const id=+e.target.closest("[data-id]").dataset.id;
+  if(!confirm("Remove this from your tracker?"))return;const {error}=await sb.from("applications").delete().eq("id",id);
+  if(error)return say(error.message);for(const u in apps)if(apps[u].id===id)delete apps[u];renderApps()};
+$("fs").onchange=renderApps;STAT.forEach(s=>$("fs").add(new Option(s,s)));
+
+// ---------- profile ----------
+$("sv").onclick=async()=>{prof={keywords:$("kw").value,level:$("lv").value,region:$("rg").value};
+  const {error}=await sb.from("profiles").upsert({user_id:user.id,...prof,updated_at:new Date().toISOString()});
+  say(error?error.message:"Profile saved.");if(!error){shown=100;tab(1)}};
+
+// ---------- tabs / auth ----------
+function tab(n){[1,2,3].forEach(i=>{$("v"+i).classList.toggle("hide",i!==n);$("t"+i).classList.toggle("on",i===n)});
+  if(n===1)render();if(n===2)renderApps()}
+[1,2,3].forEach(i=>$("t"+i).onclick=()=>{say();tab(i)});
+$("in").onclick=async()=>{say("Working...");const {error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});say(error?error.message:"")};
+$("up").onclick=async()=>{say("Working...");const {data,error}=await sb.auth.signUp({email:$("em").value.trim(),password:$("pw").value,options:{emailRedirectTo:location.href}});
+  say(error?error.message:data.session?"":"Check your email and click the confirmation link, then log in.")};
+$("out").onclick=()=>sb.auth.signOut();
+
+async function start(session){
+  user=session?.user||null;
+  $("auth").classList.toggle("hide",!!user);$("app").classList.toggle("hide",!user);$("out").classList.toggle("hide",!user);$("who").textContent=user?user.email:"";
+  if(!user)return;
+  const [p,a,j]=await Promise.all([sb.from("profiles").select("*").eq("user_id",user.id).maybeSingle(),sb.from("applications").select("*"),fetch("jobs.json?"+Date.now()).then(r=>r.json())]);
+  if(p.data)prof=p.data;apps={};(a.data||[]).forEach(x=>apps[x.job_url]=x);
+  D=j.jobs.sort((x,y)=>(y.priority-x.priority)||(x.first_seen<y.first_seen?1:-1));upd=j.updated;byUrl={};D.forEach(x=>byUrl[x.url]=x);
+  [...new Set(D.map(x=>x.source))].forEach(x=>{if(![...$("s").options].some(o=>o.value===x))$("s").add(new Option(x,x))});
+  $("kw").value=prof.keywords;$("lv").value=prof.level;$("rg").value=prof.region;
+  tab(p.data?1:3);if(!p.data)say("Welcome! Tell me what roles you want, then save your profile.");
+  try{localStorage.setItem("seen",j.updated)}catch(e){}
+}
+sb.auth.onAuthStateChange((_e,s)=>setTimeout(()=>start(s),0));
+sb.auth.getSession().then(({data})=>start(data.session));
+</script></main></body></html>
