@@ -1,0 +1,39 @@
+{
+ "greenhouse": [
+  "strike",
+  "fieldwire",
+  "youcom",
+  "sphinxdefense",
+  "tailscale",
+  "reddit",
+  "gitlab",
+  "colabsoftware",
+  "safariai",
+  "launchdarkly",
+  "fingerprint",
+  "customerio",
+  "tealmedia",
+  "fiskaly",
+  "cresta"
+ ],
+ "lever": [],
+ "ashby": [
+  "1password",
+  "airapps",
+  "httpie",
+  "updoc",
+  "sensor-tower",
+  "injective-labs",
+  "tempo",
+  "elevenlabs",
+  "hang",
+  "tensorwave",
+  "ramp",
+  "squads",
+  "phoenix",
+  "restate",
+  "stratum-ai",
+  "analog",
+  "snd"
+ ]
+}
