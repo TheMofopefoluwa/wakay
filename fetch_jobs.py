@@ -73,19 +73,19 @@ def discover():
     json.dump(found, open("found_boards.json", "w"), indent=1)
 
 def greenhouse(t):
-    d = get(f"https://boards-api.greenhouse.io/v1/boards/{t}/jobs")
+    d = get(f"https://boards-api.greenhouse.io/v1/boards/{urllib.parse.quote(t)}/jobs")
     for j in d.get("jobs", []):
         yield dict(title=j["title"], company=t, location=(j.get("location") or {}).get("name", ""),
                    url=j["absolute_url"], source="Greenhouse")
 
 def lever(t):
-    for j in get(f"https://api.lever.co/v0/postings/{t}?mode=json"):
+    for j in get(f"https://api.lever.co/v0/postings/{urllib.parse.quote(t)}?mode=json"):
         c = j.get("categories") or {}
         yield dict(title=j["text"], company=t, location=c.get("location", "") + " " + (j.get("workplaceType") or ""),
                    url=j["hostedUrl"], source="Lever")
 
 def ashby(t):
-    d = get(f"https://api.ashbyhq.com/posting-api/job-board/{t}")
+    d = get(f"https://api.ashbyhq.com/posting-api/job-board/{urllib.parse.quote(t)}")
     for j in d.get("jobs", []):
         loc = (j.get("location") or "") + (" Remote" if j.get("isRemote") else "")
         yield dict(title=j["title"], company=t, location=loc, url=j["jobUrl"], source="Ashby")
