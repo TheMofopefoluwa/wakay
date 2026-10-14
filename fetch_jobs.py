@@ -160,7 +160,7 @@ def keep(j):
     t = j["title"].lower(); loc = j["location"].lower()
     if not any(re.search(r"\b" + re.escape(k) + r"\b", t) for k in cfg["tech_keywords"]): return False
     if any(x in t for x in cfg["exclude"]): return False
-    if cfg["remote_only"] and j["source"] != "Twine" and "remote" not in loc: return False
+    if cfg["remote_only"] and j["source"] != "Twine" and "remote" not in loc and not re.search(r"nigeria|lagos|abuja|africa", loc): return False
     return True
 
 def send_digest(new):
