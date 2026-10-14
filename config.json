@@ -1,0 +1,48 @@
+{
+  "tech_keywords": [
+    "engineer",
+    "developer",
+    "software",
+    "devops",
+    "sre",
+    "data",
+    "machine learning",
+    "ai",
+    "security",
+    "qa",
+    "designer",
+    "ux",
+    "ui",
+    "product manager",
+    "frontend",
+    "backend",
+    "full stack",
+    "fullstack",
+    "mobile",
+    "android",
+    "ios",
+    "cloud",
+    "platform",
+    "analyst"
+  ],
+  "exclude": [
+    "intern",
+    "senior director",
+    "vp "
+  ],
+  "remote_only": true,
+  "greenhouse": [],
+  "lever": [],
+  "ashby": [],
+  "twine_url": "https://www.twine.net/jobs",
+  "extra_sources": [
+    "remotive",
+    "remoteok",
+    "weworkremotely",
+    "arbeitnow",
+    "jobicy",
+    "themuse",
+    "himalayas",
+    "jooble"
+  ]
+}
