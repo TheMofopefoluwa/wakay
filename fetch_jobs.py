@@ -14,9 +14,9 @@ except Exception: found = {"greenhouse": [], "lever": [], "ashby": []}
 try: dead = json.load(open("dead_boards.json"))
 except Exception: dead = {"greenhouse": [], "lever": [], "ashby": []}
 
-def get(url, as_json=True):
+def get(url, as_json=True, timeout=25):
     req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=25) as r:
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         body = r.read().decode("utf-8", "ignore")
     return json.loads(body) if as_json else body
 
@@ -30,18 +30,25 @@ PATTERNS = {"ashby": r"jobs\.ashbyhq\.com/([^/?#\"]+)",
 SKIP = {"embed", "v1", "api", "static", "favicon.ico", "robots.txt"}
 
 def discover_commoncrawl():
-    """Free, no key: lists company boards seen by Common Crawl's public index."""
-    cdx = get("https://index.commoncrawl.org/collinfo.json")[0]["cdx-api"]
+    """Free, no key: lists company boards seen by Common Crawl's public index.
+    Their server is often busy, so use small queries, retry, and fall back to older crawls."""
+    crawls = [c["cdx-api"] for c in get("https://index.commoncrawl.org/collinfo.json", timeout=60)[:4]]
     hosts = {"ashby": ["jobs.ashbyhq.com"], "lever": ["jobs.lever.co"],
              "greenhouse": ["job-boards.greenhouse.io", "boards.greenhouse.io"]}
     for src, hs in hosts.items():
         for h in hs:
-            try:
-                q = f"{cdx}?url={h}/*&output=json&fl=url&limit=4000&filter=status:200"
-                for line in get(q, as_json=False).splitlines():
-                    m = re.search(PATTERNS[src], json.loads(line)["url"])
-                    if m and m.group(1).lower() not in SKIP: add_board(src, m.group(1))
-            except Exception as e: print("commoncrawl", h, e)
+            got = False
+            for cdx in crawls:
+                for attempt in range(2):
+                    try:
+                        lines = get(f"{cdx}?url={h}/*&output=json&fl=url&limit=1500", as_json=False, timeout=120).splitlines()
+                        for line in lines:
+                            m = re.search(PATTERNS[src], json.loads(line)["url"])
+                            if m and m.group(1).lower() not in SKIP: add_board(src, m.group(1))
+                        got = True; break
+                    except Exception as e:
+                        print("commoncrawl", h, cdx[-20:], e); time.sleep(5)
+                if got: break
 
 def discover_tavily():
     key = os.environ.get("TAVILY_API_KEY")
@@ -154,15 +161,22 @@ def send_digest(new):
     new = sorted(new, key=lambda j: not j.get("priority"))[:40]
     body = "\n\n".join(f"{'* ' if j.get('priority') else ''}{j['title']}\n{j['company']} | {j['source']} | {j['location'].strip()}\n{j['url']}" for j in new)
     m = EmailMessage(); m["Subject"] = f"{len(new)} new jobs"; m["From"] = user; m["To"] = to; m.set_content(body)
-    try:
-        with smtplib.SMTP_SSL(host or "smtp.gmail.com", 465) as srv: srv.login(user, pw); srv.send_message(m)
-    except Exception as e: print("email failed", e)
+    host = host or "smtp.gmail.com"; pw = pw.replace(" ", "")
+    for how in ("ssl465", "starttls587"):
+        try:
+            if how == "ssl465":
+                srv = smtplib.SMTP_SSL(host, 465, timeout=30)
+            else:
+                srv = smtplib.SMTP(host, 587, timeout=30); srv.starttls()
+            srv.login(user, pw); srv.send_message(m); srv.quit()
+            print("email sent via", how); return
+        except Exception as e: print("email failed", how, type(e).__name__, e)
 
 def main():
     discover()
     try: old = {j["url"]: j for j in json.load(open("jobs.json"))["jobs"]}
     except Exception: old = {}
-    now = datetime.datetime.utcnow().isoformat() + "Z"
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat() + "Z"
     jobs, errors = {}, []
     tasks = [(greenhouse, t) for t in set(cfg["greenhouse"] + found["greenhouse"])]
     tasks += [(lever, t) for t in set(cfg["lever"] + found["lever"])]
@@ -187,7 +201,7 @@ def main():
                     jobs[j["url"]] = {**j, "priority": j["source"] in PRIORITY, "first_seen": old.get(j["url"], {}).get("first_seen", now), "last_seen": now}
     json.dump(found, open("found_boards.json", "w"), indent=1)
     json.dump(dead, open("dead_boards.json", "w"), indent=1)
-    cutoff = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).isoformat() + "Z"
+    cutoff = (datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - datetime.timedelta(days=30)).isoformat() + "Z"
     for u, j in old.items():   # keep a job for 30 days after it last appeared
         if u not in jobs and j.get("last_seen", j["first_seen"]) > cutoff: jobs[u] = j
     new = [j for u, j in jobs.items() if u not in old]
