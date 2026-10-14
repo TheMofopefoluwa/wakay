@@ -105,18 +105,26 @@ def twine():
         yield dict(title=title, company="Twine", location="", url=urllib.parse.urljoin("https://www.twine.net", href), source="Twine")
 
 def remotive(_=None):
-    for j in get("https://remotive.com/api/remote-jobs?category=software-dev").get("jobs", []):
-        yield dict(title=j["title"], company=j["company_name"], location="Remote " + j.get("candidate_required_location", ""), url=j["url"], source="Remotive")
+    for cat in ("software-dev", "design", "marketing", "customer-support", "writing", "sales-business",
+                "project-management", "data", "devops", "product", "human-resources", "all-others"):
+        try:
+            for j in get(f"https://remotive.com/api/remote-jobs?category={cat}").get("jobs", []):
+                yield dict(title=j["title"], company=j["company_name"], location="Remote " + j.get("candidate_required_location", ""), url=j["url"], source="Remotive")
+        except Exception as e: print("remotive", cat, e)
 
 def remoteok(_=None):
     for j in get("https://remoteok.com/api")[1:]:
         yield dict(title=j.get("position", ""), company=j.get("company", ""), location="Remote " + j.get("location", ""), url=j.get("url", ""), source="RemoteOK")
 
 def weworkremotely(_=None):
-    root = ET.fromstring(get("https://weworkremotely.com/categories/remote-programming-jobs.rss", as_json=False))
-    for it in root.iter("item"):
-        co, _, title = (it.findtext("title") or "").partition(": ")
-        yield dict(title=title or co, company=co, location="Remote", url=it.findtext("link") or "", source="WeWorkRemotely")
+    for feed in ("remote-programming-jobs", "remote-design-jobs", "remote-customer-support-jobs",
+                 "remote-sales-and-marketing-jobs", "remote-management-and-finance-jobs", "remote-all-other-jobs"):
+        try:
+            root = ET.fromstring(get(f"https://weworkremotely.com/categories/{feed}.rss", as_json=False))
+            for it in root.iter("item"):
+                co, _, title = (it.findtext("title") or "").partition(": ")
+                yield dict(title=title or co, company=co, location="Remote", url=it.findtext("link") or "", source="WeWorkRemotely")
+        except Exception as e: print("wwr", feed, e)
 
 def arbeitnow(_=None):
     for j in get("https://www.arbeitnow.com/api/job-board-api").get("data", []):
@@ -139,7 +147,7 @@ def himalayas(_=None):
 def jooble(_=None):
     key = os.environ.get("JOOBLE_KEY")
     if not key: return
-    for kw in ("software developer", "designer", "data", "devops"):
+    for kw in ("software developer", "designer", "virtual assistant", "social media manager", "content creator", "customer support", "marketing"):
         body = json.dumps({"keywords": kw, "location": "Nigeria"}).encode()
         req = urllib.request.Request(f"https://jooble.org/api/{key}", body, {"Content-Type": "application/json"})
         for j in json.load(urllib.request.urlopen(req, timeout=25)).get("jobs", []):
@@ -207,7 +215,7 @@ def main():
     new = [j for u, j in jobs.items() if u not in old]
     if old: send_digest(new)   # no email on the very first load
     out = sorted(jobs.values(), key=lambda j: j["first_seen"], reverse=True)
-    json.dump({"updated": now, "errors": errors, "jobs": out}, open("jobs.json", "w"), indent=1)
+    json.dump({"updated": now, "errors": errors, "jobs": out}, open("jobs.json", "w"), separators=(",", ":"))
     print(len(out), "jobs;", len(errors), "errors")
 
 main()
