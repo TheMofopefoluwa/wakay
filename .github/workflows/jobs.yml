@@ -19,7 +19,7 @@ jobs:
         with: { python-version: "3.12" }
       - name: Fetch jobs
         run: |
-          if [ "$(date -u +%H)" = "07" ] || [ "$(date -u +%H)" = "08" ]; then export DISCOVER=1; fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$(date -u +%H)" = "07" ] || [ "$(date -u +%H)" = "08" ]; then export DISCOVER=1; fi
           python fetch_jobs.py
         env:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
