@@ -30,6 +30,9 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SITE_URL: https://themofopefoluwa.github.io/wakay/
       - name: Save results
         run: |
           git config user.name "job-watcher"; git config user.email "bot@users.noreply.github.com"
