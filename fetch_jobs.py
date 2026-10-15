@@ -177,12 +177,10 @@ def keep(j):
     if cfg["remote_only"] and j["source"] != "Twine" and "remote" not in loc and not re.search(r"nigeria|lagos|abuja|africa", loc): return False
     return True
 
-def send_digest(new):
-    host, user, pw, to = (os.environ.get(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASS", "MAIL_TO"))
-    if not (user and pw and to and new): return
-    new = sorted(new, key=lambda j: not j.get("priority"))[:40]
-    body = "\n\n".join(f"{'* ' if j.get('priority') else ''}{j['title']}\n{j['company']} | {j['source']} | {j['location'].strip()}\n{j['url']}" for j in new)
-    m = EmailMessage(); m["Subject"] = f"{len(new)} new jobs"; m["From"] = user; m["To"] = to; m.set_content(body)
+def smtp_send(to, subject, body):
+    host, user, pw = (os.environ.get(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASS"))
+    if not (user and pw and to): return False
+    m = EmailMessage(); m["Subject"] = subject; m["From"] = user; m["To"] = to; m.set_content(body)
     host = host or "smtp.gmail.com"; pw = pw.replace(" ", "")
     for how in ("ssl465", "starttls587"):
         try:
@@ -191,8 +189,59 @@ def send_digest(new):
             else:
                 srv = smtplib.SMTP(host, 587, timeout=30); srv.starttls()
             srv.login(user, pw); srv.send_message(m); srv.quit()
-            print("email sent via", how); return
+            print("email sent via", how, "to", to.split("@")[0][:2] + "***"); return True
         except Exception as e: print("email failed", how, type(e).__name__, e)
+    return False
+
+# ---- per-person matching: keep in step with index.html ----
+ALL_REGIONS = ["ng", "africa", "world", "unspecified", "other"]
+def tags(j):
+    l = re.sub(r"south africa", "", re.sub(r"remote", "", j["location"], flags=re.I), flags=re.I).strip()
+    t = []
+    if re.search(r"nigeria|lagos|abuja|port harcourt|ibadan|kano", l, re.I): t.append("ng")
+    if re.search(r"\bafrica\b|emea", l, re.I): t.append("africa")
+    if re.search(r"worldwide|anywhere|global|international", l, re.I): t.append("world")
+    if not l: t.append("unspecified")
+    return t or ["other"]
+
+def level_of(title):
+    t = title.lower()
+    if re.search(r"\b(junior|jr|entry|graduate|trainee|associate)\b", t): return "junior"
+    if re.search(r"\b(senior|sr|lead|principal|staff|head|director|vp)\b", t): return "senior"
+    return "mid"
+
+def person_matches(j, p):
+    kws = [k.strip().lower() for k in (p.get("keywords") or "").split(",") if k.strip()]
+    if kws and not any(k in (j["title"] + " " + j["company"]).lower() for k in kws): return False
+    if p.get("level", "any") != "any" and level_of(j["title"]) != p["level"]: return False
+    r = p.get("region") or "ng"
+    sel = ["ng", "africa", "world", "unspecified"] if r == "ng" else ALL_REGIONS if r == "any" else r.split(",")
+    return any(x in sel for x in tags(j))
+
+def sb_profiles():
+    url, key = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SECRET_KEY")
+    if not (url and key): return None
+    req = urllib.request.Request(url.rstrip("/") + "/rest/v1/profiles?select=email,keywords,level,region&email_alerts=eq.true&email=not.is.null",
+                                 headers={"apikey": key})
+    return json.load(urllib.request.urlopen(req, timeout=30))
+
+def fmt(jobs):
+    return "\n\n".join(f"{'* ' if j.get('priority') else ''}{j['title']}\n{j['company']} | {j['source']} | {j['location'].strip() or 'location not listed'}\n{j['url']}" for j in jobs)
+
+def send_digest(new):
+    if not new: return
+    try: people = sb_profiles()
+    except Exception as e:
+        print("profiles failed", e); people = None
+    if people is None:   # no Supabase set up: one digest to the owner
+        to = os.environ.get("MAIL_TO")
+        if to: smtp_send(to, f"{len(new)} new jobs", fmt(sorted(new, key=lambda j: not j.get("priority"))[:40]))
+        return
+    site = os.environ.get("SITE_URL", "")
+    for p in people:
+        mine = sorted([j for j in new if person_matches(j, p)], key=lambda j: not j.get("priority"))[:25]
+        if mine:
+            smtp_send(p["email"], f"{len(mine)} new jobs for you", fmt(mine) + f"\n\n---\nOpen Wakay: {site}\nTo stop these emails, untick the alert box in My profile.")
 
 def main():
     discover()
