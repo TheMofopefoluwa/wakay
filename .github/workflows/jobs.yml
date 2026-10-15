@@ -1,6 +1,11 @@
 name: fetch-jobs
 on:
   workflow_dispatch:
+    inputs:
+      test_alerts:
+        description: "Send a test alert using current jobs"
+        type: boolean
+        default: false
   schedule:            # UTC. Lagos (UTC+1): 8am, 12pm, 3pm, 6pm, 8pm, 12am
     - cron: "0 7 * * *"
     - cron: "0 11 * * *"
@@ -32,6 +37,7 @@ jobs:
           MAIL_TO: ${{ secrets.MAIL_TO }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          TEST_ALERTS: ${{ inputs.test_alerts }}
           SITE_URL: https://themofopefoluwa.github.io/wakay/
       - name: Save results
         run: |
