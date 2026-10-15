@@ -118,7 +118,7 @@ def remoteok(_=None):
 
 def weworkremotely(_=None):
     for feed in ("remote-programming-jobs", "remote-design-jobs", "remote-customer-support-jobs",
-                 "remote-sales-and-marketing-jobs", "remote-management-and-finance-jobs", "remote-all-other-jobs"):
+                 "remote-sales-and-marketing-jobs", "remote-management-and-finance-jobs"):
         try:
             root = ET.fromstring(get(f"https://weworkremotely.com/categories/{feed}.rss", as_json=False))
             for it in root.iter("item"):
@@ -237,9 +237,11 @@ def send_digest(new):
         to = os.environ.get("MAIL_TO")
         if to: smtp_send(to, f"{len(new)} new jobs", fmt(sorted(new, key=lambda j: not j.get("priority"))[:40]))
         return
+    print(f"alerts: {len(new)} new jobs, {len(people)} people with alerts on")
     site = os.environ.get("SITE_URL", "")
     for p in people:
         mine = sorted([j for j in new if person_matches(j, p)], key=lambda j: not j.get("priority"))[:25]
+        print(f"alerts: {len(mine)} matches for {p['email'][:2]}***")
         if mine:
             smtp_send(p["email"], f"{len(mine)} new jobs for you", fmt(mine) + f"\n\n---\nOpen Wakay: {site}\nTo stop these emails, untick the alert box in My profile.")
 
@@ -276,7 +278,8 @@ def main():
     for u, j in old.items():   # keep a job for 30 days after it last appeared
         if u not in jobs and j.get("last_seen", j["first_seen"]) > cutoff: jobs[u] = j
     new = [j for u, j in jobs.items() if u not in old]
-    if old: send_digest(new)   # no email on the very first load
+    test = os.environ.get("TEST_ALERTS") == "true"   # manual test: treat every job as new
+    if old or test: send_digest(list(jobs.values()) if test else new)   # no email on the very first load
     out = sorted(jobs.values(), key=lambda j: j["first_seen"], reverse=True)
     json.dump({"updated": now, "errors": errors, "jobs": out}, open("jobs.json", "w"), separators=(",", ":"))
     print(len(out), "jobs;", len(errors), "errors")
