@@ -25,6 +25,7 @@ textarea{width:100%;min-height:54px;margin-top:6px}
 .box a{color:var(--fg)}
 input[type=checkbox]{padding:0;width:auto;min-width:0;flex:none;margin-right:8px}
 .chk label{display:block;margin:6px 0}
+.desc{white-space:pre-wrap;font-size:.9rem;margin-top:8px;max-height:260px;overflow:auto;border-left:3px solid var(--line);padding-left:10px}
 .tg{display:inline-block;border:1px solid var(--line);border-radius:10px;padding:0 8px;margin-left:6px;font-size:.78rem;color:var(--mut)}#msg{color:var(--acc);min-height:1.4em}
 </style></head><body><main>
 <header><h1>Wakay</h1><div class="m"><span id="who"></span> <button id="out" class="hide">Log out</button></div></header>
@@ -124,11 +125,19 @@ function render(){
   $("sub").textContent=`${L.length} ${$("all").checked?"results":"matching"} of ${D.length} jobs. Last checked ${ago(upd)}.`;
   $("list").innerHTML=L.slice(0,shown).map(j=>`<div class="job ${j.first_seen>last?"new":""}"><div>
     <a href="${esc(safe(j.url))}" target="_blank" rel="noopener">${esc(j.title)}</a>${j.first_seen>last?' <span class="n">New</span>':""}
-    <div class="m">${esc(j.company)} · ${j.priority?"★ ":""}${esc(j.source)}${tags(j).map(t=>`<span class="tg">${LB[t]}</span>`).join("")} · ${esc(j.location.replace(/\b(remote)(\s+remote)+\b/ig,"Remote").trim()||"Location not listed")} · found ${ago(j.first_seen)}</div></div>
+    <div class="m">${esc(j.company)} · ${j.priority?"★ ":""}${esc(j.source)}${tags(j).map(t=>`<span class="tg">${LB[t]}</span>`).join("")} · ${esc(j.location.replace(/\b(remote)(\s+remote)+\b/ig,"Remote").trim()||"Location not listed")} · found ${ago(j.first_seen)}</div>
+    <div class="m"><a href="#" data-d="${esc(j.url)}">Show description</a></div><div class="desc hide"></div></div>
     <button data-u="${esc(j.url)}">${apps[j.url]?"Saved ✓":"Save"}</button></div>`).join("")||"<p class='m'>No matching jobs. Try broader keywords in My profile.</p>";
   $("more").classList.toggle("hide",L.length<=shown);
 }
-$("list").onclick=async e=>{const u=e.target.dataset?.u;if(!u||apps[u])return;const j=byUrl[u];
+const dc={};async function getDesc(u){if(u in dc)return dc[u];const {data}=await sb.from("job_descriptions").select("description").eq("url",u).maybeSingle();return dc[u]=data?.description||""}
+$("list").onclick=async e=>{const d=e.target.dataset?.d;
+  if(d){e.preventDefault();const box=e.target.closest(".job").querySelector(".desc");
+    if(!box.classList.contains("hide")){box.classList.add("hide");e.target.textContent="Show description";return}
+    box.classList.remove("hide");e.target.textContent="Hide description";
+    if(!box.dataset.l){box.textContent="Loading...";box.textContent=(await getDesc(d))||"No description saved for this job yet. Open the job link to read it.";box.dataset.l=1}
+    return}
+  const u=e.target.dataset?.u;if(!u||apps[u])return;const j=byUrl[u];
   const {data,error}=await sb.from("applications").upsert({user_id:user.id,job_url:u,title:j.title,company:j.company,source:j.source,location:j.location,status:"Saved"},{onConflict:"user_id,job_url"}).select().single();
   if(error)return say(error.message);apps[u]=data;render()};
 $("more").onclick=()=>{shown+=100;render()};$("q").oninput=$("s").onchange=$("all").onchange=$("lc").onchange=()=>{shown=100;render()};
@@ -185,7 +194,7 @@ $("cvf").onchange=async e=>{const f=e.target.files[0];if(!f)return;say("Reading 
   catch(err){say("Could not read that file. Paste the text instead.")}};
 
 function openGen(id){cur=Object.values(apps).find(a=>a.id===id);if(!cur)return;
-  $("gt").textContent=cur.title+" at "+(cur.company||"");$("jd").value="";$("res").classList.add("hide");say();tab(5)}
+  $("gt").textContent=cur.title+" at "+(cur.company||"");$("jd").value="";$("res").classList.add("hide");say();tab(5);getDesc(cur.job_url).then(t=>{if(t&&!$("jd").value.trim())$("jd").value=t})}
 $("bk").onclick=()=>tab(2);
 $("go").onclick=async()=>{const jd=$("jd").value.trim();
   if(!prof.cv_text)return say("Add your CV first, in My CV.");
