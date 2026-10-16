@@ -86,11 +86,5 @@
     "rss",
     "workingnomads"
   ],
-  "rss_feeds": [
-    {
-      "name": "HotNigerianJobs",
-      "url": "https://www.hotnigerianjobs.com/feed",
-      "location": "Nigeria"
-    }
-  ]
+   "rss_feeds": []
 }
