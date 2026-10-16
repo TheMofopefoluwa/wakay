@@ -298,7 +298,8 @@
   "livecareer",
   "humanintelligence",
   "leaflink",
-  "dropbox"
+  "dropbox",
+  "pelacasecorp"
  ],
  "lever": [
   "TrilogyFederal",
@@ -881,6 +882,7 @@
   "zapier",
   "n8n",
   "openai",
-  "duck-duck-go"
+  "duck-duck-go",
+  "kit"
  ]
 }
