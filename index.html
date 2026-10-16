@@ -3,6 +3,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Wakay</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{--bg:#f7f7f4;--fg:#1c1f23;--mut:#6b7178;--line:#dcdcd6;--acc:#1f5eff;--new:#e8f0ff;--card:#fff}
 @media(prefers-color-scheme:dark){:root{--bg:#16181b;--fg:#e8e9ea;--mut:#9aa0a6;--line:#2b2f34;--acc:#7da2ff;--new:#1d2740;--card:#1c1f23}}
@@ -34,7 +37,7 @@ input[type=checkbox]{padding:0;width:auto;min-width:0;flex:none;margin-right:8px
 </section>
 
 <section id="app" class="hide">
-  <div class="tabs row"><button id="t1" class="on">Jobs</button><button id="t2">My applications</button><button id="t3">My profile</button></div>
+  <div class="tabs row"><button id="t1" class="on">Jobs</button><button id="t2">My applications</button><button id="t3">My profile</button><button id="t4">My CV</button></div>
 
   <div id="v3" class="box hide">
     <b>Which jobs should I show you?</b>
@@ -61,6 +64,25 @@ input[type=checkbox]{padding:0;width:auto;min-width:0;flex:none;margin-right:8px
   </div>
 
   <div id="v2" class="hide"><div class="row"><select id="fs"><option value="">All statuses</option></select></div><div id="apps"></div></div>
+
+  <div id="v4" class="hide"><div class="box"><b>My CV and writing style</b>
+    <p class="m">Saved in this site's database under your login. Other users cannot see it, but the site owner can technically view stored data.</p>
+    <div class="row"><input id="fn" placeholder="Full name"><input id="ph" placeholder="Phone number"></div>
+    <div class="row"><input id="ad" placeholder="Address or city"><input id="li" placeholder="LinkedIn link (optional)"></div>
+    <div class="row"><input type="file" id="cvf" accept=".pdf,.docx,.txt"></div>
+    <textarea id="cv" style="min-height:220px" placeholder="Your CV as text. Upload a PDF or Word file above, or paste it here, then fix anything that looks odd."></textarea>
+    <textarea id="ws" style="min-height:120px" placeholder="Paste 1 to 3 things you have written (old cover letters or emails) so the AI can match your voice."></textarea>
+    <label class="m"><input type="checkbox" id="cs"> I understand that my CV and the job text, with my name, email, phone number and address removed, are sent to Google's free Gemini service, which may use them to improve its products and may have them read by human reviewers.</label>
+    <div class="row"><button id="svcv" class="p">Save</button></div></div></div>
+
+  <div id="v5" class="hide"><div class="box"><b id="gt"></b>
+    <textarea id="jd" style="min-height:150px;margin-top:10px" placeholder="Paste the full job description here."></textarea>
+    <div class="row"><button id="go" class="p">Tailor my CV and write a cover letter</button><button id="bk">Back</button></div></div>
+    <div id="res" class="box hide"><b>What I emphasised</b><p class="m" id="nt"></p>
+      <b>Tailored CV (you can edit it)</b><textarea id="ocv" style="min-height:280px"></textarea>
+      <div class="row"><button data-dl="cv-pdf">CV as PDF</button><button data-dl="cv-doc">CV as Word</button></div>
+      <b>Cover letter (you can edit it)</b><textarea id="ocl" style="min-height:230px"></textarea>
+      <div class="row"><button data-dl="cl-pdf">Letter as PDF</button><button data-dl="cl-doc">Letter as Word</button></div></div></div>
 </section>
 
 <script>
@@ -116,14 +138,14 @@ function renderApps(){
   const f=$("fs").value,L=Object.values(apps).filter(a=>!f||a.status===f).sort((a,b)=>a.updated_at<b.updated_at?1:-1);
   $("apps").innerHTML=L.map(a=>`<div class="box" data-id="${a.id}"><a href="${esc(safe(a.job_url))}" target="_blank" rel="noopener"><b>${esc(a.title)}</b></a>
     <div class="m">${esc(a.company||"")} · ${esc(a.source||"")}</div>
-    <div class="row"><select data-st>${STAT.map(s=>`<option ${s===a.status?"selected":""}>${s}</option>`).join("")}</select><button data-rm>Remove</button></div>
+    <div class="row"><select data-st>${STAT.map(s=>`<option ${s===a.status?"selected":""}>${s}</option>`).join("")}</select><button data-prep>Prepare application</button><button data-rm>Remove</button></div>
     <textarea data-nt placeholder="Notes: contact, dates, what you sent...">${esc(a.notes)}</textarea></div>`).join("")||"<p class='m'>Nothing here yet. Press Save on a job.</p>";
 }
 async function patch(id,fields){const {data,error}=await sb.from("applications").update({...fields,updated_at:new Date().toISOString()}).eq("id",id).select().single();
   if(error)return say(error.message);apps[data.job_url]=data}
 $("apps").onchange=async e=>{if(e.target.matches("[data-st]")){await patch(+e.target.closest("[data-id]").dataset.id,{status:e.target.value});renderApps()}};
 $("apps").focusout=null;$("apps").addEventListener("focusout",e=>{if(e.target.matches("[data-nt]"))patch(+e.target.closest("[data-id]").dataset.id,{notes:e.target.value})});
-$("apps").onclick=async e=>{if(!e.target.matches("[data-rm]"))return;const id=+e.target.closest("[data-id]").dataset.id;
+$("apps").onclick=async e=>{if(e.target.matches("[data-prep]")){openGen(+e.target.closest("[data-id]").dataset.id);return}if(!e.target.matches("[data-rm]"))return;const id=+e.target.closest("[data-id]").dataset.id;
   if(!confirm("Remove this from your tracker?"))return;const {error}=await sb.from("applications").delete().eq("id",id);
   if(error)return say(error.message);for(const u in apps)if(apps[u].id===id)delete apps[u];renderApps()};
 $("fs").onchange=renderApps;STAT.forEach(s=>$("fs").add(new Option(s,s)));
@@ -133,10 +155,83 @@ $("sv").onclick=async()=>{prof={keywords:$("kw").value,level:$("lv").value,regio
   const {error}=await sb.from("profiles").upsert({user_id:user.id,...prof,email:user.email,updated_at:new Date().toISOString()});
   say(error?error.message:"Profile saved.");if(!error){shown=100;tab(1)}};
 
+// ---------- CV, redaction, AI tailoring, downloads ----------
+const SU="https://qiddlgppfujcsjdlifbv.supabase.co",SK="sb_publishable_6_N9DjB9PLiahNUhWpUq5w_UfQXIHnM";
+let cur=null;
+try{pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"}catch(e){}
+const rx=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function det(){return{name:prof.full_name||"",email:user?user.email:"",phone:prof.phone||"",address:prof.address||"",linkedin:prof.linkedin||""}}
+function redact(t){const d=det();
+  t=t.replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g,"[EMAIL]");
+  t=t.replace(/(https?:\/\/)?(www\.)?linkedin\.com\/[^\s)]+/gi,"[LINKEDIN]");
+  t=t.replace(/\+?\d[\d\s().-]{7,}\d/g,m=>(m.match(/\d/g)||[]).length>=9?"[PHONE]":m);
+  if(d.name){t=t.replace(new RegExp(rx(d.name),"gi"),"[FULL_NAME]");d.name.split(/\s+/).filter(x=>x.length>2).forEach(p=>{t=t.replace(new RegExp("\\b"+rx(p)+"\\b","gi"),"[FULL_NAME]")})}
+  d.address.split(/[,;\n]/).map(x=>x.trim()).filter(x=>x.length>3).forEach(p=>{t=t.replace(new RegExp(rx(p),"gi"),"[ADDRESS]")});
+  return t}
+function restore(t){const d=det();
+  t=t.replace(/\[FULL_NAME\]/g,d.name).replace(/\[EMAIL\]/g,d.email).replace(/\[PHONE\]/g,d.phone).replace(/\[ADDRESS\]/g,d.address).replace(/\[LINKEDIN\]/g,d.linkedin);
+  return t.split("\n").map(l=>l.includes("|")?l.replace(/(\s*\|\s*)+/g," | ").replace(/^\s*\|\s*|\s*\|\s*$/g,""):l).join("\n")}
+function fillCv(){$("fn").value=prof.full_name||"";$("ph").value=prof.phone||"";$("ad").value=prof.address||"";$("li").value=prof.linkedin||"";$("cv").value=prof.cv_text||"";$("ws").value=prof.writing_samples||"";$("cs").checked=!!prof.ai_consent_at}
+$("svcv").onclick=async()=>{const f={full_name:$("fn").value.trim(),phone:$("ph").value.trim(),address:$("ad").value.trim(),linkedin:$("li").value.trim(),cv_text:$("cv").value,writing_samples:$("ws").value,ai_consent_at:$("cs").checked?(prof.ai_consent_at||new Date().toISOString()):null};
+  const {error}=await sb.from("profiles").upsert({user_id:user.id,email:user.email,...f,updated_at:new Date().toISOString()});
+  if(error)return say(error.message);Object.assign(prof,f);say("Saved.")};
+$("cvf").onchange=async e=>{const f=e.target.files[0];if(!f)return;say("Reading your file...");
+  try{const n=f.name.toLowerCase();let t="";
+    if(n.endsWith(".pdf")){const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;for(let i=1;i<=pdf.numPages;i++){const c=await (await pdf.getPage(i)).getTextContent();t+=c.items.map(x=>x.str+(x.hasEOL?"\n":" ")).join("")+"\n"}}
+    else if(n.endsWith(".docx"))t=(await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value;
+    else t=await f.text();
+    if(t.trim().length<50)return say("I could not read text from that file (a scanned PDF?). Paste the text instead.");
+    $("cv").value=t.trim();say("Done. Check the text below, fix anything odd, then press Save.")}
+  catch(err){say("Could not read that file. Paste the text instead.")}};
+
+function openGen(id){cur=Object.values(apps).find(a=>a.id===id);if(!cur)return;
+  $("gt").textContent=cur.title+" at "+(cur.company||"");$("jd").value="";$("res").classList.add("hide");say();tab(5)}
+$("bk").onclick=()=>tab(2);
+$("go").onclick=async()=>{const jd=$("jd").value.trim();
+  if(!prof.cv_text)return say("Add your CV first, in My CV.");
+  if(!prof.ai_consent_at)return say("Tick the consent box in My CV and save first.");
+  if(jd.length<80)return say("Paste the full job description first.");
+  $("go").disabled=true;say("Writing your documents. This can take up to a minute...");
+  try{const {data:{session}}=await sb.auth.getSession();
+    const r=await fetch(SU+"/functions/v1/tailor",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token,apikey:SK},
+      body:JSON.stringify({cv:redact(prof.cv_text),samples:redact(prof.writing_samples||""),title:cur.title,company:cur.company||"",description:redact(jd)})});
+    const o=await r.json().catch(()=>({error:"The service did not answer. Try again."}));
+    if(!r.ok||o.error)return say(o.error||"Something went wrong. Try again.");
+    $("ocv").value=restore(o.tailored_cv||"");$("ocl").value=restore(o.cover_letter||"");$("nt").textContent=o.match_notes||"";
+    $("res").classList.remove("hide");say("Ready. Read it through and edit anything before you download.")}
+  catch(err){say("Could not reach the AI service. Check your connection and try again.")}
+  finally{$("go").disabled=false}};
+
+function save(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function toPdf(text,name,cvStyle){const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"pt",format:"a4"}),W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=50;let y=M;
+  text.split("\n").forEach((ln,i)=>{ln=ln.trimEnd();if(!ln.trim()){y+=6;return}
+    let size=10.5,bold=false,ind=0,out=ln;
+    if(cvStyle&&ln.startsWith("## ")){out=ln.slice(3).toUpperCase();size=11.5;bold=true;y+=6}
+    else if(ln.startsWith("- ")){out="\u2022 "+ln.slice(2);ind=12}
+    else if(cvStyle&&i===0){size=18;bold=true}
+    doc.setFont("helvetica",bold?"bold":"normal");doc.setFontSize(size);
+    doc.splitTextToSize(out,W-2*M-ind).forEach(w=>{if(y+size+3>H-M){doc.addPage();y=M}doc.text(w,M+ind,y+size);y+=size+3});y+=4});
+  doc.save(name)}
+function toDoc(text,name,cvStyle){const e=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");let h="",ul=false;
+  const close=()=>{if(ul){h+="</ul>";ul=false}};
+  text.split("\n").forEach((ln,i)=>{ln=ln.trim();
+    if(ln.startsWith("- ")){if(!ul){h+="<ul>";ul=true}h+="<li>"+e(ln.slice(2))+"</li>";return}
+    close();if(!ln)return;
+    if(cvStyle&&ln.startsWith("## "))h+="<h2>"+e(ln.slice(3))+"</h2>";
+    else if(cvStyle&&i===0)h+="<h1>"+e(ln)+"</h1>";else h+="<p>"+e(ln)+"</p>"});close();
+  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}h1{font-size:20pt;margin:0 0 4pt}h2{font-size:12pt;border-bottom:1px solid #999;margin:14pt 0 4pt}p{margin:0 0 7pt}ul{margin:0 0 7pt}</style></head><body>'+h+"</body></html>";
+  save(new Blob(["\ufeff",html],{type:"application/msword"}),name)}
+$("res").onclick=e=>{const k=e.target.dataset?.dl;if(!k)return;
+  const who=(prof.full_name||"my").replace(/\s+/g,"_"),jobn=(cur.company||"job").replace(/[^\w]+/g,"_");
+  if(k==="cv-pdf")toPdf($("ocv").value,`${who}_CV_${jobn}.pdf`,true);
+  if(k==="cv-doc")toDoc($("ocv").value,`${who}_CV_${jobn}.doc`,true);
+  if(k==="cl-pdf")toPdf($("ocl").value,`${who}_Cover_Letter_${jobn}.pdf`,false);
+  if(k==="cl-doc")toDoc($("ocl").value,`${who}_Cover_Letter_${jobn}.doc`,false)};
+
 // ---------- tabs / auth ----------
-function tab(n){[1,2,3].forEach(i=>{$("v"+i).classList.toggle("hide",i!==n);$("t"+i).classList.toggle("on",i===n)});
+function tab(n){[1,2,3,4,5].forEach(i=>{$("v"+i).classList.toggle("hide",i!==n);$("t"+i)?.classList.toggle("on",i===n)});
   if(n===1)render();if(n===2)renderApps()}
-[1,2,3].forEach(i=>$("t"+i).onclick=()=>{say();tab(i)});
+[1,2,3,4].forEach(i=>$("t"+i).onclick=()=>{say();tab(i)});
 $("in").onclick=async()=>{say("Working...");const {error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});say(error?error.message:"")};
 $("up").onclick=async()=>{say("Working...");const {data,error}=await sb.auth.signUp({email:$("em").value.trim(),password:$("pw").value,options:{emailRedirectTo:location.href}});
   say(error?error.message:data.session?"":"Check your email and click the confirmation link, then log in.")};
@@ -150,7 +245,7 @@ async function start(session){
   if(p.data)prof=p.data;apps={};(a.data||[]).forEach(x=>apps[x.job_url]=x);
   D=j.jobs.sort((x,y)=>(y.priority-x.priority)||(x.first_seen<y.first_seen?1:-1));upd=j.updated;byUrl={};D.forEach(x=>byUrl[x.url]=x);
   [...new Set(D.map(x=>x.source))].forEach(x=>{if(![...$("s").options].some(o=>o.value===x))$("s").add(new Option(x,x))});
-  $("kw").value=prof.keywords;$("lv").value=prof.level;setRegions();$("al").checked=prof.email_alerts!==false;
+  $("kw").value=prof.keywords;$("lv").value=prof.level;setRegions();$("al").checked=prof.email_alerts!==false;fillCv();
   tab(p.data?1:3);if(!p.data)say("Welcome! Tell me what roles you want, then save your profile.");
   try{localStorage.setItem("seen",j.updated)}catch(e){}
 }
