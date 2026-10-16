@@ -80,6 +80,9 @@ input[type=checkbox]{padding:0;width:auto;min-width:0;flex:none;margin-right:8px
     <textarea id="jd" style="min-height:150px;margin-top:10px" placeholder="Paste the full job description here."></textarea>
     <div class="row"><button id="go" class="p">Tailor my CV and write a cover letter</button><button id="bk">Back</button></div></div>
     <div id="res" class="box hide"><b>What I emphasised</b><p class="m" id="nt"></p>
+      <b>Font for your downloads</b>
+      <div class="row"><select id="ft"><option>Times New Roman</option><option>Calibri</option><option>Arial</option><option>Cambria</option></select>
+      <select id="fz"><option value="10">Size 10</option><option value="11" selected>Size 11</option><option value="12">Size 12</option></select></div>
       <b>Tailored CV (you can edit it)</b><textarea id="ocv" style="min-height:280px"></textarea>
       <div class="row"><button data-dl="cv-pdf">CV as PDF</button><button data-dl="cv-doc">CV as Word</button></div>
       <b>Cover letter (you can edit it)</b><textarea id="ocl" style="min-height:230px"></textarea>
@@ -207,34 +210,52 @@ $("go").onclick=async()=>{const jd=$("jd").value.trim();
     const o=await r.json().catch(()=>({error:"The service did not answer. Try again."}));
     if(!r.ok||o.error)return say(o.error||"Something went wrong. Try again.");
     $("ocv").value=restore(o.tailored_cv||"");$("ocl").value=restore(o.cover_letter||"");$("nt").textContent=o.match_notes||"";
-    $("res").classList.remove("hide");say("Ready. Read it through and edit anything before you download.")}
+    $("res").classList.remove("hide");applyFont();say("Ready. Read it through and edit anything before you download.")}
   catch(err){say("Could not reach the AI service. Check your connection and try again.")}
   finally{$("go").disabled=false}};
 
 function save(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
-function toPdf(text,name,cvStyle){const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"pt",format:"a4"}),W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=50;let y=M;
-  text.split("\n").forEach((ln,i)=>{ln=ln.trimEnd();if(!ln.trim()){y+=6;return}
-    let size=10.5,bold=false,ind=0,out=ln;
-    if(cvStyle&&ln.startsWith("## ")){out=ln.slice(3).toUpperCase();size=11.5;bold=true;y+=6}
-    else if(ln.startsWith("- ")){out="\u2022 "+ln.slice(2);ind=12}
-    else if(cvStyle&&i===0){size=18;bold=true}
-    doc.setFont("helvetica",bold?"bold":"normal");doc.setFontSize(size);
-    doc.splitTextToSize(out,W-2*M-ind).forEach(w=>{if(y+size+3>H-M){doc.addPage();y=M}doc.text(w,M+ind,y+size);y+=size+3});y+=4});
+const FONTS={"Times New Roman":{pdf:"times",css:'"Times New Roman",Times,serif'},
+  "Calibri":{pdf:"Carlito",css:'Calibri,Carlito,sans-serif',ttf:["carlito/Carlito-Regular.ttf","carlito/Carlito-Bold.ttf"]},
+  "Arial":{pdf:"helvetica",css:'Arial,Helvetica,sans-serif'},
+  "Cambria":{pdf:"Caladea",css:'Cambria,Caladea,serif',ttf:["caladea/Caladea-Regular.ttf","caladea/Caladea-Bold.ttf"]}};
+const FB="https://cdn.jsdelivr.net/gh/google/fonts@47d54ca1ebb14fd864695f1d39dc734f39017c33/ofl/",fc={};
+async function b64(u){if(fc[u])return fc[u];const buf=new Uint8Array(await (await fetch(u)).arrayBuffer());let s="";for(let i=0;i<buf.length;i+=32768)s+=String.fromCharCode.apply(null,buf.subarray(i,i+32768));return fc[u]=btoa(s)}
+async function pdfFace(doc,f){const F=FONTS[f];if(!F.ttf)return F.pdf;
+  doc.addFileToVFS(F.pdf+"-r.ttf",await b64(FB+F.ttf[0]));doc.addFont(F.pdf+"-r.ttf",F.pdf,"normal");
+  doc.addFileToVFS(F.pdf+"-b.ttf",await b64(FB+F.ttf[1]));doc.addFont(F.pdf+"-b.ttf",F.pdf,"bold");return F.pdf}
+function applyFont(){const F=FONTS[$("ft").value];$("ocv").style.fontFamily=F.css;$("ocl").style.fontFamily=F.css;$("ocv").style.fontSize=$("ocl").style.fontSize=$("fz").value+"pt"}
+try{const sf=localStorage.getItem("ft"),sz=localStorage.getItem("fz");if(sf&&FONTS[sf])$("ft").value=sf;if(sz)$("fz").value=sz}catch(e){}
+$("ft").onchange=$("fz").onchange=()=>{try{localStorage.setItem("ft",$("ft").value);localStorage.setItem("fz",$("fz").value)}catch(e){}applyFont()};
+applyFont();
+
+async function toPdf(text,name,cvStyle){const f=$("ft").value,fs=+$("fz").value,{jsPDF}=window.jspdf,doc=new jsPDF({unit:"pt",format:"a4"});
+  let face;try{face=await pdfFace(doc,f)}catch(e){face="times";say("I could not load "+f+" for the PDF, so I used Times New Roman. Check your connection and try again.")}
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=54;let y=M;
+  text.split("\n").forEach((ln,i)=>{ln=ln.trimEnd();if(!ln.trim()){y+=fs*.5;return}
+    let size=fs,bold=false,ind=0,out=ln;
+    if(cvStyle&&ln.startsWith("## ")){out=ln.slice(3).toUpperCase();size=fs+1;bold=true;y+=fs*.5}
+    else if(ln.startsWith("- ")){out="\u2022 "+ln.slice(2);ind=14}
+    else if(cvStyle&&i===0){size=fs+7;bold=true}
+    doc.setFont(face,bold?"bold":"normal");doc.setFontSize(size);
+    doc.splitTextToSize(out,W-2*M-ind).forEach(w=>{if(y+size*1.3>H-M){doc.addPage();y=M}doc.text(w,M+ind,y+size);y+=size*1.3});y+=fs*.3});
   doc.save(name)}
-function toDoc(text,name,cvStyle){const e=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");let h="",ul=false;
+function toDoc(text,name,cvStyle){const f=$("ft").value,fs=+$("fz").value,e=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");let h="",ul=false;
   const close=()=>{if(ul){h+="</ul>";ul=false}};
   text.split("\n").forEach((ln,i)=>{ln=ln.trim();
     if(ln.startsWith("- ")){if(!ul){h+="<ul>";ul=true}h+="<li>"+e(ln.slice(2))+"</li>";return}
     close();if(!ln)return;
     if(cvStyle&&ln.startsWith("## "))h+="<h2>"+e(ln.slice(3))+"</h2>";
     else if(cvStyle&&i===0)h+="<h1>"+e(ln)+"</h1>";else h+="<p>"+e(ln)+"</p>"});close();
-  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}h1{font-size:20pt;margin:0 0 4pt}h2{font-size:12pt;border-bottom:1px solid #999;margin:14pt 0 4pt}p{margin:0 0 7pt}ul{margin:0 0 7pt}</style></head><body>'+h+"</body></html>";
+  const ff=`font-family:${FONTS[f].css};mso-ascii-font-family:"${f}";mso-hansi-font-family:"${f}";mso-bidi-font-family:"${f}";mso-fareast-font-family:"${f}"`;
+  const css=`body,p,li,ul,h1,h2{${ff}}body{font-size:${fs}pt}h1{font-size:${fs+8}pt;margin:0 0 4pt}h2{font-size:${fs+1}pt;border-bottom:1px solid #999;margin:14pt 0 4pt}p{margin:0 0 7pt}ul{margin:0 0 7pt}`;
+  const html='<html lang="en-GB" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style>'+css+"</style></head><body>"+h+"</body></html>";
   save(new Blob(["\ufeff",html],{type:"application/msword"}),name)}
-$("res").onclick=e=>{const k=e.target.dataset?.dl;if(!k)return;
+$("res").onclick=async e=>{const k=e.target.dataset?.dl;if(!k)return;
   const who=(prof.full_name||"my").replace(/\s+/g,"_"),jobn=(cur.company||"job").replace(/[^\w]+/g,"_");
-  if(k==="cv-pdf")toPdf($("ocv").value,`${who}_CV_${jobn}.pdf`,true);
+  if(k==="cv-pdf")await toPdf($("ocv").value,`${who}_CV_${jobn}.pdf`,true);
   if(k==="cv-doc")toDoc($("ocv").value,`${who}_CV_${jobn}.doc`,true);
-  if(k==="cl-pdf")toPdf($("ocl").value,`${who}_Cover_Letter_${jobn}.pdf`,false);
+  if(k==="cl-pdf")await toPdf($("ocl").value,`${who}_Cover_Letter_${jobn}.pdf`,false);
   if(k==="cl-doc")toDoc($("ocl").value,`${who}_Cover_Letter_${jobn}.doc`,false)};
 
 // ---------- tabs / auth ----------
