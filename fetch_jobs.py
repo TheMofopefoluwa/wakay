@@ -73,22 +73,22 @@ def discover():
     json.dump(found, open("found_boards.json", "w"), indent=1)
 
 def greenhouse(t):
-    d = get(f"https://boards-api.greenhouse.io/v1/boards/{urllib.parse.quote(t)}/jobs")
+    d = get(f"https://boards-api.greenhouse.io/v1/boards/{urllib.parse.quote(t)}/jobs?content=true")
     for j in d.get("jobs", []):
         yield dict(title=j["title"], company=t, location=(j.get("location") or {}).get("name", ""),
-                   url=j["absolute_url"], source="Greenhouse")
+                   url=j["absolute_url"], source="Greenhouse", desc=j.get("content", ""))
 
 def lever(t):
     for j in get(f"https://api.lever.co/v0/postings/{urllib.parse.quote(t)}?mode=json"):
         c = j.get("categories") or {}
         yield dict(title=j["text"], company=t, location=c.get("location", "") + " " + (j.get("workplaceType") or ""),
-                   url=j["hostedUrl"], source="Lever")
+                   url=j["hostedUrl"], source="Lever", desc=(j.get("descriptionPlain") or "") + "\n" + (j.get("additionalPlain") or ""))
 
 def ashby(t):
     d = get(f"https://api.ashbyhq.com/posting-api/job-board/{urllib.parse.quote(t)}")
     for j in d.get("jobs", []):
         loc = (j.get("location") or "") + (" Remote" if j.get("isRemote") else "")
-        yield dict(title=j["title"], company=t, location=loc, url=j["jobUrl"], source="Ashby")
+        yield dict(title=j["title"], company=t, location=loc, url=j["jobUrl"], source="Ashby", desc=j.get("descriptionPlain") or j.get("descriptionHtml") or "")
 
 class Links(HTMLParser):
     def __init__(s): super().__init__(); s.out = []; s.href = None
@@ -109,12 +109,12 @@ def remotive(_=None):
                 "project-management", "data", "devops", "product", "human-resources", "all-others"):
         try:
             for j in get(f"https://remotive.com/api/remote-jobs?category={cat}").get("jobs", []):
-                yield dict(title=j["title"], company=j["company_name"], location="Remote " + j.get("candidate_required_location", ""), url=j["url"], source="Remotive")
+                yield dict(title=j["title"], company=j["company_name"], location="Remote " + j.get("candidate_required_location", ""), url=j["url"], source="Remotive", desc=j.get("description", ""))
         except Exception as e: print("remotive", cat, e)
 
 def remoteok(_=None):
     for j in get("https://remoteok.com/api")[1:]:
-        yield dict(title=j.get("position", ""), company=j.get("company", ""), location="Remote " + j.get("location", ""), url=j.get("url", ""), source="RemoteOK")
+        yield dict(title=j.get("position", ""), company=j.get("company", ""), location="Remote " + j.get("location", ""), url=j.get("url", ""), source="RemoteOK", desc=j.get("description", ""))
 
 def weworkremotely(_=None):
     for feed in ("remote-programming-jobs", "remote-design-jobs", "remote-customer-support-jobs",
@@ -123,26 +123,26 @@ def weworkremotely(_=None):
             root = ET.fromstring(get(f"https://weworkremotely.com/categories/{feed}.rss", as_json=False))
             for it in root.iter("item"):
                 co, _, title = (it.findtext("title") or "").partition(": ")
-                yield dict(title=title or co, company=co, location="Remote", url=it.findtext("link") or "", source="WeWorkRemotely")
+                yield dict(title=title or co, company=co, location="Remote", url=it.findtext("link") or "", source="WeWorkRemotely", desc=it.findtext("description") or "")
         except Exception as e: print("wwr", feed, e)
 
 def arbeitnow(_=None):
     for j in get("https://www.arbeitnow.com/api/job-board-api").get("data", []):
-        yield dict(title=j["title"], company=j["company_name"], location=j.get("location", "") + (" Remote" if j.get("remote") else ""), url=j["url"], source="Arbeitnow")
+        yield dict(title=j["title"], company=j["company_name"], location=j.get("location", "") + (" Remote" if j.get("remote") else ""), url=j["url"], source="Arbeitnow", desc=j.get("description", ""))
 
 def jobicy(_=None):
     for j in get("https://jobicy.com/api/v2/remote-jobs?count=50").get("jobs", []):
-        yield dict(title=j.get("jobTitle", ""), company=j.get("companyName", ""), location="Remote " + str(j.get("jobGeo", "")), url=j.get("url", ""), source="Jobicy")
+        yield dict(title=j.get("jobTitle", ""), company=j.get("companyName", ""), location="Remote " + str(j.get("jobGeo", "")), url=j.get("url", ""), source="Jobicy", desc=j.get("jobDescription") or j.get("jobExcerpt") or "")
 
 def themuse(_=None):
     for pg in (1, 2):
         for j in get(f"https://www.themuse.com/api/public/jobs?page={pg}&category=Software%20Engineering&category=Design%20and%20UX&category=Data%20and%20Analytics")["results"]:
             locs = " ".join(l.get("name", "") for l in j.get("locations", []))
-            yield dict(title=j["name"], company=j["company"]["name"], location=locs, url=j["refs"]["landing_page"], source="TheMuse")
+            yield dict(title=j["name"], company=j["company"]["name"], location=locs, url=j["refs"]["landing_page"], source="TheMuse", desc=j.get("contents", ""))
 
 def himalayas(_=None):
     for j in get("https://himalayas.app/jobs/api?limit=100").get("jobs", []):
-        yield dict(title=j.get("title", ""), company=j.get("companyName", ""), location="Remote " + " ".join(j.get("locationRestrictions") or []), url=j.get("applicationLink") or j.get("guid", ""), source="Himalayas")
+        yield dict(title=j.get("title", ""), company=j.get("companyName", ""), location="Remote " + " ".join(j.get("locationRestrictions") or []), url=j.get("applicationLink") or j.get("guid", ""), source="Himalayas", desc=j.get("description") or j.get("excerpt") or "")
 
 def jooble(_=None):
     key = os.environ.get("JOOBLE_KEY")
@@ -151,7 +151,7 @@ def jooble(_=None):
         body = json.dumps({"keywords": kw, "location": "Nigeria"}).encode()
         req = urllib.request.Request(f"https://jooble.org/api/{key}", body, {"Content-Type": "application/json"})
         for j in json.load(urllib.request.urlopen(req, timeout=25)).get("jobs", []):
-            yield dict(title=j.get("title", ""), company=j.get("company", ""), location=(j.get("location") or "") + " Nigeria", url=j.get("link", ""), source="Jooble")
+            yield dict(title=j.get("title", ""), company=j.get("company", ""), location=(j.get("location") or "") + " Nigeria", url=j.get("link", ""), source="Jooble", desc=j.get("snippet", ""))
 
 def rss_feeds(_=None):
     """Any RSS feed you list under rss_feeds in config.json."""
@@ -160,12 +160,12 @@ def rss_feeds(_=None):
             root = ET.fromstring(get(f["url"], as_json=False))
             for it in root.iter("item"):
                 yield dict(title=(it.findtext("title") or "").strip(), company=f.get("company") or f["name"],
-                           location=f.get("location", ""), url=(it.findtext("link") or "").strip(), source=f["name"])
+                           location=f.get("location", ""), url=(it.findtext("link") or "").strip(), source=f["name"], desc=it.findtext("description") or "")
         except Exception as e: print("rss", f["name"], e)
 
 def workingnomads(_=None):
     for j in get("https://www.workingnomads.com/api/exposed_jobs/"):
-        yield dict(title=j.get("title", ""), company=j.get("company_name", ""), location="Remote " + str(j.get("location") or ""), url=j.get("url", ""), source="WorkingNomads")
+        yield dict(title=j.get("title", ""), company=j.get("company_name", ""), location="Remote " + str(j.get("location") or ""), url=j.get("url", ""), source="WorkingNomads", desc=j.get("description", ""))
 
 EXTRA = {"rss": rss_feeds, "workingnomads": workingnomads, "jobicy": jobicy, "themuse": themuse, "himalayas": himalayas, "jooble": jooble, "remotive": remotive, "remoteok": remoteok, "weworkremotely": weworkremotely, "arbeitnow": arbeitnow}
 PRIORITY = {"Ashby", "Greenhouse", "Lever", "Twine"}
@@ -245,12 +245,48 @@ def send_digest(new):
         if mine:
             smtp_send(p["email"], f"{len(mine)} new jobs for you", fmt(mine) + f"\n\n---\nOpen Wakay: {site}\nTo stop these emails, untick the alert box in My profile.")
 
+import html as _html
+def clean_desc(t):
+    t = _html.unescape(t or "")                       # Greenhouse sends escaped HTML
+    t = re.sub(r"(?i)<br\s*/?>|</p>|</li>|</h\d>|</div>", "\n", t)
+    t = re.sub(r"(?i)<li[^>]*>", "- ", t)
+    t = re.sub(r"<[^>]+>", " ", t)
+    t = _html.unescape(t)
+    t = re.sub(r"[ \t\xa0]+", " ", t)
+    t = re.sub(r"\n\s*\n+", "\n\n", t)
+    return t.strip()[:6000]
+
+def push_descriptions(descs, jobs, new):
+    """Save descriptions for new jobs and for jobs that match someone's profile (kept out of jobs.json to keep the site fast)."""
+    url, key = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SECRET_KEY")
+    if not (url and key and descs): return
+    try: people = sb_profiles() or []
+    except Exception: people = []
+    want = {j["url"] for j in new}
+    for p in people:
+        want |= {u for u, j in jobs.items() if person_matches(j, p)}
+    rows = sorted((u for u in want if u in descs), key=lambda u: jobs[u]["first_seen"] if u in jobs and "first_seen" in jobs[u] else "", reverse=True)[:4000]
+    rows = [{"url": u, "description": descs[u]} for u in rows]
+    h = {"apikey": key, "Content-Type": "application/json", "Prefer": "resolution=ignore-duplicates,return=minimal"}
+    for i in range(0, len(rows), 200):
+        try:
+            urllib.request.urlopen(urllib.request.Request(url.rstrip("/") + "/rest/v1/job_descriptions?on_conflict=url",
+                                   json.dumps(rows[i:i + 200]).encode(), h), timeout=60)
+        except Exception as e:
+            print("descriptions failed", e); break
+    print("descriptions: sent", len(rows))
+    try:   # forget descriptions older than 45 days
+        cutoff = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=45)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        urllib.request.urlopen(urllib.request.Request(url.rstrip("/") + "/rest/v1/job_descriptions?updated_at=lt." + cutoff,
+                               headers={"apikey": key}, method="DELETE"), timeout=30)
+    except Exception as e: print("prune failed", e)
+
 def main():
     discover()
     try: old = {j["url"]: j for j in json.load(open("jobs.json"))["jobs"]}
     except Exception: old = {}
     now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat() + "Z"
-    jobs, errors = {}, []
+    jobs, errors, descs = {}, [], {}
     tasks = [(greenhouse, t) for t in set(cfg["greenhouse"] + found["greenhouse"])]
     tasks += [(lever, t) for t in set(cfg["lever"] + found["lever"])]
     tasks += [(ashby, t) for t in set(cfg["ashby"] + found["ashby"])]
@@ -270,7 +306,9 @@ def main():
                     if arg in found.get(src, []): found[src].remove(arg)
                 else: errors.append(f"{arg or fn.__name__}: {err}")
             for j in items:
+                d = j.pop("desc", "")
                 if j["url"] and keep(j):
+                    if d: descs[j["url"]] = clean_desc(d)
                     jobs[j["url"]] = {**j, "priority": j["source"] in PRIORITY, "first_seen": old.get(j["url"], {}).get("first_seen", now), "last_seen": now}
     json.dump(found, open("found_boards.json", "w"), indent=1)
     json.dump(dead, open("dead_boards.json", "w"), indent=1)
@@ -278,6 +316,7 @@ def main():
     for u, j in old.items():   # keep a job for 30 days after it last appeared
         if u not in jobs and j.get("last_seen", j["first_seen"]) > cutoff: jobs[u] = j
     new = [j for u, j in jobs.items() if u not in old]
+    push_descriptions(descs, jobs, new)
     test = os.environ.get("TEST_ALERTS") == "true"   # manual test: treat every job as new
     if old or test: send_digest(list(jobs.values()) if test else new)   # no email on the very first load
     out = sorted(jobs.values(), key=lambda j: j["first_seen"], reverse=True)
