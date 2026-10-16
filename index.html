@@ -6,6 +6,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <style>
 :root{--bg:#f7f7f4;--fg:#1c1f23;--mut:#6b7178;--line:#dcdcd6;--acc:#1f5eff;--new:#e8f0ff;--card:#fff}
 @media(prefers-color-scheme:dark){:root{--bg:#16181b;--fg:#e8e9ea;--mut:#9aa0a6;--line:#2b2f34;--acc:#7da2ff;--new:#1d2740;--card:#1c1f23}}
@@ -80,11 +81,12 @@ input[type=checkbox]{padding:0;width:auto;min-width:0;flex:none;margin-right:8px
     <textarea id="jd" style="min-height:150px;margin-top:10px" placeholder="Paste the full job description here."></textarea>
     <div class="row"><button id="go" class="p">Tailor my CV and write a cover letter</button><button id="bk">Back</button></div></div>
     <div id="res" class="box hide"><b>What I emphasised</b><p class="m" id="nt"></p>
-      <b>Layout for your downloads (A4, portrait)</b>
+      <b>Layout for your downloads (A4)</b>
       <div class="row"><select id="ft"><option>Times New Roman</option><option>Calibri</option><option>Arial</option><option>Cambria</option></select>
       <label class="m">Font size (8 to 30) <input id="fz" type="number" min="8" max="30" value="12"></label></div>
       <div class="row"><select id="mg"><option value="36">Narrow margins (1.3 cm)</option><option value="54" selected>Medium margins (1.9 cm)</option><option value="72">Normal margins (2.5 cm)</option><option value="90">Wide margins (3.2 cm)</option></select>
-      <select id="al"><option value="left">Body text aligned left</option><option value="justify">Body text justified</option></select></div>
+      <select id="al"><option value="left">Body text aligned left</option><option value="justify">Body text justified</option></select>
+      <select id="or"><option value="portrait">Portrait page</option><option value="landscape">Landscape page</option></select></div>
       <b>Tailored CV (you can edit it)</b><textarea id="ocv" style="min-height:280px"></textarea>
       <div class="row"><button data-dl="cv-pdf">CV as PDF</button><button data-dl="cv-doc">CV as Word</button></div>
       <b>Cover letter (you can edit it)</b><textarea id="ocl" style="min-height:230px"></textarea>
@@ -228,50 +230,53 @@ async function pdfFace(doc,f){const F=FONTS[f];if(!F.ttf)return F.pdf;
   doc.addFileToVFS(F.pdf+"-b.ttf",await b64(FB+F.ttf[1]));doc.addFont(F.pdf+"-b.ttf",F.pdf,"bold");return F.pdf}
 const fsz=()=>Math.min(30,Math.max(8,Math.round(+$("fz").value)||12));
 function applyFont(){const F=FONTS[$("ft").value];["ocv","ocl"].forEach(i=>{$(i).style.fontFamily=F.css;$(i).style.fontSize=fsz()+"pt";$(i).style.textAlign=$("al").value==="justify"?"justify":"left"})}
-try{for(const k of ["ft","fz","mg","al"]){const v=localStorage.getItem(k);if(v!==null&&(k!=="ft"||FONTS[v]))$(k).value=v}}catch(e){}
-["ft","fz","mg","al"].forEach(k=>$(k).onchange=()=>{try{localStorage.setItem(k,$(k).value)}catch(e){}applyFont()});
+try{for(const k of ["ft","fz","mg","al","or"]){const v=localStorage.getItem(k);if(v!==null&&(k!=="ft"||FONTS[v]))$(k).value=v}}catch(e){}
+["ft","fz","mg","al","or"].forEach(k=>$(k).onchange=()=>{try{localStorage.setItem(k,$(k).value)}catch(e){}applyFont()});
 applyFont();
 const heads=lines=>{const h=[];lines.forEach((l,i)=>{if(l.trim()&&h.length<2)h.push(i)});return h}; // first two non-empty lines = name + contact line
 
-async function toPdf(text,name,cvStyle){const f=$("ft").value,fs=fsz(),M=+$("mg").value,just=$("al").value==="justify",{jsPDF}=window.jspdf,doc=new jsPDF({unit:"pt",format:"a4",orientation:"portrait"});
+async function toPdf(text,name,cvStyle){const f=$("ft").value,fs=fsz(),M=+$("mg").value,just=$("al").value==="justify",{jsPDF}=window.jspdf,doc=new jsPDF({unit:"pt",format:"a4",orientation:$("or").value});
   let face;try{face=await pdfFace(doc,f)}catch(e){face="times";say("I could not load "+f+" for the PDF, so I used Times New Roman. Check your connection and try again.")}
   doc.setLineHeightFactor(1.3);
   const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),mw=W-2*M,L=text.split("\n"),hd=cvStyle?heads(L):[];let y=M;
   L.forEach((ln,i)=>{ln=ln.trimEnd();if(!ln.trim()){y+=fs*.5;return}
-    let size=fs,bold=false,ind=0,out=ln,center=false;
+    let size=fs,bold=false,ind=0,out=ln,center=false,bullet=false;
     if(cvStyle&&ln.startsWith("## ")){out=ln.slice(3).toUpperCase();size=fs+1;bold=true;y+=fs*.5}
-    else if(ln.startsWith("- ")){out="\u2022 "+ln.slice(2);ind=14}
+    else if(ln.startsWith("- ")){out=ln.slice(2);ind=fs*1.4;bullet=true}
     else if(hd[0]===i){size=fs+7;bold=true;center=true}
     else if(hd[1]===i)center=true;
     doc.setFont(face,bold?"bold":"normal");doc.setFontSize(size);
     const w=doc.splitTextToSize(out,mw-ind),lh=size*1.3,need=w.length*lh;
     if(y+need>H-M){doc.addPage();y=M}
+    if(bullet)doc.text("\u2022",M+ind*.3,y+size);        // bullet sits in the margin gap, text lines up under the first letter
     if(center)w.forEach(t=>{doc.text(t,W/2,y+size,{align:"center"});y+=lh});
     else if(just&&!bold&&w.length>1&&need<H-2*M){doc.text(out,M+ind,y+size,{align:"justify",maxWidth:mw-ind});y+=need}
     else w.forEach(t=>{doc.text(t,M+ind,y+size);y+=lh});
     y+=fs*.3});
   doc.save(name)}
-function toDoc(text,name,cvStyle){const f=$("ft").value,fs=fsz(),M=+$("mg").value,just=$("al").value==="justify",e=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"),L=text.split("\n"),hd=cvStyle?heads(L):[];let h="",ul=false;
-  const close=()=>{if(ul){h+="</ul>";ul=false}};
-  L.forEach((ln,i)=>{ln=ln.trim();
-    if(ln.startsWith("- ")){if(!ul){h+="<ul>";ul=true}h+="<li>"+e(ln.slice(2))+"</li>";return}
-    close();if(!ln)return;
-    if(cvStyle&&ln.startsWith("## "))h+="<h2>"+e(ln.slice(3))+"</h2>";
-    else if(hd[0]===i)h+='<h1 style="text-align:center">'+e(ln)+"</h1>";
-    else if(hd[1]===i)h+='<p style="text-align:center">'+e(ln)+"</p>";
-    else h+="<p>"+e(ln)+"</p>"});close();
-  const ff=`font-family:${FONTS[f].css};mso-ascii-font-family:"${f}";mso-hansi-font-family:"${f}";mso-bidi-font-family:"${f}";mso-fareast-font-family:"${f}"`;
-  const css=`@page WordSection1{size:595.3pt 841.9pt;mso-page-orientation:portrait;margin:${M}pt ${M}pt ${M}pt ${M}pt}div.WordSection1{page:WordSection1}`+
-    `body,p,li,ul,h1,h2{${ff}}body{font-size:${fs}pt}p,li{text-align:${just?"justify":"left"}}h1{font-size:${fs+7}pt;margin:0 0 4pt}h2{font-size:${fs+1}pt;border-bottom:1px solid #999;margin:14pt 0 4pt}p{margin:0 0 7pt}ul{margin:0 0 7pt}`;
-  const html='<html lang="en-GB" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8">'+
-    '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--><style>'+css+'</style></head><body><div class="WordSection1">'+h+"</div></body></html>";
-  save(new Blob(["\ufeff",html],{type:"application/msword"}),name)}
+async function toDocx(text,name,cvStyle){
+  if(!window.docx){say("The Word builder could not load. Check your connection and try again, or use the PDF.");return}
+  const D=window.docx,f=$("ft").value,fs=fsz(),M=+$("mg").value*20,just=$("al").value==="justify",land=$("or").value==="landscape";
+  const font={ascii:f,hAnsi:f,eastAsia:f,cs:f},L=text.split("\n"),hd=cvStyle?heads(L):[],jus=just?D.AlignmentType.JUSTIFIED:D.AlignmentType.LEFT,P=[];
+  L.forEach((raw,i)=>{const ln=raw.trim();if(!ln)return;
+    if(ln.startsWith("- "))P.push(new D.Paragraph({numbering:{reference:"bul",level:0},alignment:jus,spacing:{after:60},children:[new D.TextRun({text:ln.slice(2)})]}));
+    else if(cvStyle&&ln.startsWith("## "))P.push(new D.Paragraph({keepNext:true,spacing:{before:240,after:80},border:{bottom:{style:D.BorderStyle.SINGLE,size:6,color:"999999",space:1}},children:[new D.TextRun({text:ln.slice(3).toUpperCase(),bold:true,size:(fs+1)*2})]}));
+    else if(hd[0]===i)P.push(new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{after:60},children:[new D.TextRun({text:ln,bold:true,size:(fs+7)*2})]}));
+    else if(hd[1]===i)P.push(new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{after:120},children:[new D.TextRun({text:ln})]}));
+    else P.push(new D.Paragraph({alignment:jus,spacing:{after:120},children:[new D.TextRun({text:ln})]}))});
+  const doc=new D.Document({
+    styles:{default:{document:{run:{font,size:fs*2},paragraph:{spacing:{line:276}}}}},
+    numbering:{config:[{reference:"bul",levels:[{level:0,format:D.LevelFormat.BULLET,text:"\u2022",alignment:D.AlignmentType.LEFT,style:{paragraph:{indent:{left:360,hanging:260}}}}]}]},
+    sections:[{properties:{page:{size:{width:11906,height:16838,orientation:land?D.PageOrientation.LANDSCAPE:D.PageOrientation.PORTRAIT},margin:{top:M,right:M,bottom:M,left:M}}},children:P}]});
+  save(await D.Packer.toBlob(doc),name)}
 $("res").onclick=async e=>{const k=e.target.dataset?.dl;if(!k)return;
   const who=(prof.full_name||"my").replace(/\s+/g,"_"),jobn=(cur.company||"job").replace(/[^\w]+/g,"_");
-  if(k==="cv-pdf")await toPdf($("ocv").value,`${who}_CV_${jobn}.pdf`,true);
-  if(k==="cv-doc")toDoc($("ocv").value,`${who}_CV_${jobn}.doc`,true);
-  if(k==="cl-pdf")await toPdf($("ocl").value,`${who}_Cover_Letter_${jobn}.pdf`,false);
-  if(k==="cl-doc")toDoc($("ocl").value,`${who}_Cover_Letter_${jobn}.doc`,false)};
+  try{
+    if(k==="cv-pdf")await toPdf($("ocv").value,`${who}_CV_${jobn}.pdf`,true);
+    if(k==="cv-doc")await toDocx($("ocv").value,`${who}_CV_${jobn}.docx`,true);
+    if(k==="cl-pdf")await toPdf($("ocl").value,`${who}_Cover_Letter_${jobn}.pdf`,false);
+    if(k==="cl-doc")await toDocx($("ocl").value,`${who}_Cover_Letter_${jobn}.docx`,false)
+  }catch(err){say("Something went wrong while making the file. Try again, or try a different font.")}};
 
 // ---------- tabs / auth ----------
 function tab(n){[1,2,3,4,5].forEach(i=>{$("v"+i).classList.toggle("hide",i!==n);$("t"+i)?.classList.toggle("on",i===n)});
