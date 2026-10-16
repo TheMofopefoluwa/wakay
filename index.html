@@ -92,7 +92,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const safe=u=>/^https?:\/\//i.test(u)?u:"#";
 let uid=null,user=null,prof={keywords:"",level:"any",region:"ng,africa,world,unspecified"},apps={},D=[],byUrl={},shown=100,upd="",last="";
 try{last=localStorage.getItem("seen")||""}catch(e){}
-const say=t=>$("msg").textContent=t||"";
+const say=t=>{$("msg").textContent=t||"";if(t)window.scrollTo({top:0,behavior:"smooth"})};
 const ago=t=>{const h=(Date.now()-new Date(t))/36e5;return h<1?"just now":h<24?Math.floor(h)+"h ago":Math.floor(h/24)+"d ago"};
 
 // ---------- matching ----------
