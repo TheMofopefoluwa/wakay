@@ -301,7 +301,9 @@
   "pelacasecorp",
   "praxent",
   "gatherai",
-  "scotch"
+  "scotch",
+  "alphasights",
+  "roku"
  ],
  "lever": [
   "TrilogyFederal",
@@ -937,6 +939,13 @@
   "binance.us",
   "Hyperbound",
   "limble",
-  "beamery"
+  "beamery",
+  "percona",
+  "scalera",
+  "planera",
+  "bullpen-talent",
+  "livtech",
+  "searchapi",
+  "space44"
  ]
 }
