@@ -1,96 +1,200 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Wakay</title>
+<title>Wakay | jobs that fit you</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23900C3F'/%3E%3Ctext x='32' y='46' font-size='40' font-family='Arial' font-weight='700' text-anchor='middle' fill='%2399E2B4'%3Ew%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=DM+Mono:wght@500&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <style>
-:root{--bg:#f7f7f4;--fg:#1c1f23;--mut:#6b7178;--line:#dcdcd6;--acc:#1f5eff;--new:#e8f0ff;--card:#fff}
-@media(prefers-color-scheme:dark){:root{--bg:#16181b;--fg:#e8e9ea;--mut:#9aa0a6;--line:#2b2f34;--acc:#7da2ff;--new:#1d2740;--card:#1c1f23}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}
-main{max-width:780px;margin:0 auto;padding:28px 18px}
-h1{font-size:1.6rem;margin:0}.sub,.m{color:var(--mut);font-size:.9rem}.hide{display:none!important}
-header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px}
-input,select,textarea,button{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
-button{cursor:pointer}button.p{background:var(--acc);color:#fff;border-color:var(--acc)}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.row>*{flex:1;min-width:140px}
-.box{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--card);margin:12px 0}
-.tabs button{flex:0 0 auto;min-width:0}.tabs .on{border-color:var(--acc);color:var(--acc)}
-.job{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;padding:12px 8px;border-top:1px solid var(--line)}
-.job.new{background:var(--new)}.job a{color:inherit;font-weight:600;text-decoration:none}.job a:hover{text-decoration:underline}
-.job button{flex:0 0 auto;min-width:0}.n{color:var(--acc);font-weight:600;font-size:.85rem}
-textarea{width:100%;min-height:54px;margin-top:6px}
-.box a{color:var(--fg)}
-input[type=checkbox]{padding:0;width:auto;min-width:0;flex:none;margin-right:8px}
-.chk label{display:block;margin:6px 0}
-.desc{white-space:pre-wrap;font-size:.9rem;margin-top:8px;max-height:260px;overflow:auto;border-left:3px solid var(--line);padding-left:10px}
-.tg{display:inline-block;border:1px solid var(--line);border-radius:10px;padding:0 8px;margin-left:6px;font-size:.78rem;color:var(--mut)}#msg{color:var(--acc);min-height:1.4em}
-</style></head><body><main>
-<header><h1>Wakay</h1><div class="m"><span id="who"></span> <button id="out" class="hide">Log out</button></div></header>
-<p id="msg"></p>
+:root{--ink:#0A1128;--mint:#99E2B4;--wine:#900C3F;--bg:#fff;--fg:#0A1128;--mut:#586079;--line:#D9DDE8;--card:#fff;--link:#900C3F;--mint-t:#E3F6EA;--wine-t:#FBE6EE;--sh:#99E2B4;--focus:#900C3F}
+@media(prefers-color-scheme:dark){:root{--bg:#0A1128;--fg:#F3F5FA;--mut:#A3ABC2;--line:#27315B;--card:#111A38;--link:#FF8DB5;--mint-t:#12342B;--wine-t:#3B1230;--sh:#900C3F;--focus:#99E2B4}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.55 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;line-height:1.08;margin:0;letter-spacing:-.02em}
+.hide{display:none!important}.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.subtle{color:var(--mut);font-size:.9rem}
+/* bar */
+.bar{background:var(--ink);color:#fff;position:sticky;top:0;z-index:30;border-bottom:1px solid #1d2850}
+.bar .wrap{display:flex;align-items:center;gap:18px;min-height:62px}
+.logo{display:flex;align-items:center;gap:10px;font:800 1.35rem "Bricolage Grotesque",sans-serif;letter-spacing:-.03em;color:#fff;text-decoration:none}
+.mark{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--mint);color:var(--ink);font-style:normal;transform:rotate(-6deg)}
+.tabs{display:flex;gap:2px;overflow-x:auto;flex:1}#spacer{flex:0}.tabs.hide+#spacer{flex:1}
+.tabs button{border:0;background:transparent;color:#B9C1DB;font:500 .76rem "DM Mono",ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;padding:23px 12px 20px;border-bottom:3px solid transparent;border-radius:0;white-space:nowrap}
+.tabs button:hover{color:#fff;background:transparent}.tabs button.on{color:#fff;border-bottom-color:var(--mint)}
+.who{font-size:.85rem;color:#B9C1DB;white-space:nowrap}
+.bar #out{border-color:#4a5580;color:#fff;font-size:.8rem;padding:6px 12px}.bar #out:hover{background:#fff;color:var(--ink)}
+/* controls */
+button{font:600 .92rem Figtree,system-ui,sans-serif;border:2px solid var(--fg);background:transparent;color:var(--fg);border-radius:10px;padding:9px 15px;cursor:pointer;transition:background .12s,box-shadow .12s,color .12s}
+button:hover{background:var(--fg);color:var(--bg)}
+button.p{background:var(--wine);border-color:var(--wine);color:#fff}button.p:hover{background:var(--wine);color:#fff;box-shadow:3px 3px 0 var(--ink)}
+button:disabled{opacity:.55;cursor:wait}
+input,select,textarea{width:100%;font:inherit;color:var(--fg);background:var(--card);border:2px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea{resize:vertical}input[type=checkbox]{width:auto;padding:0;accent-color:var(--wine);flex:none}input[type=file]{padding:8px}
+:is(input,select,textarea,button,a):focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 0}.row>*{flex:1;min-width:140px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.f{display:block;margin:0 0 14px}.f>span{display:block;font-weight:600;font-size:.88rem;margin-bottom:5px}
+/* toast */
+#msg{position:fixed;left:50%;top:74px;transform:translateX(-50%);z-index:50;max-width:min(680px,92vw);background:var(--mint);color:var(--ink);border:2px solid var(--ink);border-radius:12px;padding:10px 16px;box-shadow:4px 4px 0 var(--ink);font-weight:600;margin:0}
+#msg:empty{display:none}
+/* tiles */
+.tiles{display:flex;gap:10px}
+.tiles i{display:grid;place-items:center;width:84px;height:84px;border-radius:22px;border:2px solid var(--ink);font:800 2.8rem "Bricolage Grotesque",sans-serif;font-style:normal;box-shadow:4px 4px 0 var(--ink);animation:pop .45s cubic-bezier(.3,1.5,.5,1) both}
+.tiles i:nth-child(1){background:var(--wine);color:#fff;transform:rotate(-5deg)}
+.tiles i:nth-child(2){background:#fff;color:var(--ink);transform:rotate(3deg) translateY(10px);animation-delay:.06s}
+.tiles i:nth-child(3){background:var(--ink);color:var(--mint);transform:rotate(-2deg);animation-delay:.12s}
+.tiles i:nth-child(4){background:#fff;color:var(--wine);transform:rotate(4deg) translateY(10px);animation-delay:.18s}
+.tiles i:nth-child(5){background:var(--wine);color:#fff;transform:rotate(-3deg);animation-delay:.24s}
+@keyframes pop{from{opacity:0;scale:.6}}
+/* hero */
+.hero{background:var(--mint);color:var(--ink);padding:44px 0 42px;overflow:hidden;--fg:var(--ink)}
+.hero-in{display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+.hero h1{font-size:clamp(2.3rem,5.2vw,3.8rem);font-weight:800}
+.lead{margin:12px 0 24px;font-size:1.05rem;max-width:54ch;color:#1B2547}
+.searchcard{background:#fff;color:var(--ink);border:2px solid var(--ink);border-radius:16px;padding:12px;box-shadow:6px 6px 0 var(--ink);max-width:780px;--card:#fff;--line:#CFD5E6;--fg:var(--ink);--bg:#fff}
+.srow{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:8px}
+.chk1{display:flex;gap:8px;align-items:center;font-size:.88rem;margin:10px 4px 0;color:#2C3557}
+/* job cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;padding:28px 0}
+.card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:border-color .15s,box-shadow .15s}
+.card:hover{border-color:var(--fg);box-shadow:5px 5px 0 var(--sh)}.card.new{border-color:var(--wine)}
+.ch{display:flex;gap:12px;align-items:flex-start}
+.tile{flex:0 0 46px;height:46px;border-radius:12px;display:grid;place-items:center;font:800 1.3rem "Bricolage Grotesque",sans-serif}
+.t0{background:var(--wine);color:#fff}.t1{background:var(--mint);color:var(--ink)}.t2{background:var(--ink);color:var(--mint);box-shadow:inset 0 0 0 2px #2b3768}
+.ct{min-width:0;flex:1}.title{display:block;font:700 1.08rem/1.25 "Bricolage Grotesque",sans-serif;color:var(--fg);text-decoration:none;overflow-wrap:anywhere}
+.title:hover{text-decoration:underline;text-decoration-color:var(--wine);text-underline-offset:3px;text-decoration-thickness:2px}
+.co{color:var(--mut);font-size:.9rem;overflow-wrap:anywhere}
+.save{padding:6px 12px;font-size:.82rem;flex:0 0 auto}.save.on{background:var(--mint);border-color:var(--mint);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 .72rem "DM Mono",ui-monospace,monospace;padding:3px 9px;border-radius:99px;background:var(--line);color:var(--fg)}
+.chip.star{background:var(--ink);color:var(--mint)}.chip.new{background:var(--wine);color:#fff}
+.g-ng{background:var(--mint);color:var(--ink)}.g-africa,.g-world{background:var(--mint-t)}.g-other{background:var(--wine-t);color:var(--link)}
+.st-Saved{background:var(--mint-t)}.st-Applied{background:var(--ink);color:var(--mint)}.st-Replied{background:var(--mint);color:var(--ink)}
+.st-Interview{background:var(--wine);color:#fff}.st-Offer{background:var(--mint);color:var(--ink);outline:2px solid var(--ink)}.st-Rejected{background:var(--line);color:var(--mut)}
+.loc{font-size:.92rem}
+.cf{display:flex;justify-content:space-between;gap:8px;font-size:.82rem;color:var(--mut);margin-top:auto}.cf a{color:var(--link);font-weight:600}
+.desc{white-space:pre-wrap;font-size:.9rem;max-height:260px;overflow:auto;border-left:3px solid var(--wine);padding-left:12px}
+.empty{grid-column:1/-1;border:2px dashed var(--line);border-radius:16px;padding:28px;text-align:center;color:var(--mut)}.empty b{display:block;color:var(--fg);font:700 1.2rem "Bricolage Grotesque",sans-serif;margin-bottom:4px}
+.more{text-align:center;padding-bottom:56px}.more button{min-width:200px}
+/* pages and panels */
+.page{padding:36px 20px 64px}.page h2{font-size:clamp(1.7rem,3.4vw,2.4rem);font-weight:800;margin-bottom:6px}
+.sub2{color:var(--mut);margin:0 0 22px;max-width:62ch}
+.panel{background:var(--card);border:2px solid var(--fg);border-radius:18px;padding:22px;box-shadow:6px 6px 0 var(--sh);max-width:840px;margin-bottom:24px}
+.panel h3{font-size:1.2rem;margin:20px 0 8px}.panel h3:first-child{margin-top:0}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.pills label{display:inline-flex;gap:8px;align-items:center;border:2px solid var(--line);border-radius:99px;padding:7px 14px;cursor:pointer;font-weight:500}
+.pills label:has(input:checked){background:var(--mint);border-color:var(--ink);color:var(--ink)}
+.opt{display:flex;gap:10px;align-items:flex-start;margin:6px 0;font-size:.92rem}
+/* sign in */
+.authwrap{display:grid;grid-template-columns:1.1fr 1fr;min-height:calc(100vh - 62px)}
+.authl{background:var(--ink);color:#fff;padding:56px clamp(24px,5vw,72px);display:flex;flex-direction:column;justify-content:center;gap:24px}
+.authl .tiles i{border-color:var(--mint);box-shadow:4px 4px 0 var(--mint)}.authl .tiles i:nth-child(3){background:var(--mint);color:var(--ink)}
+.authl h1{font-size:clamp(2.2rem,4.4vw,3.6rem);font-weight:800}.authl p{color:#C4CBE3;max-width:46ch;font-size:1.05rem;margin:0}
+.perks{list-style:none;margin:0;padding:0;display:grid;gap:10px;color:#fff}.perks li{display:flex;gap:12px;align-items:center}
+.perks li:before{content:"";flex:none;width:14px;height:14px;border-radius:4px;background:var(--mint);transform:rotate(-8deg)}
+.authr{display:grid;place-items:center;padding:32px 20px;background:var(--mint)}
+.authr .panel{width:100%;max-width:440px;background:#fff;color:var(--ink);box-shadow:6px 6px 0 var(--ink);--card:#fff;--line:#D9DDE8;--fg:var(--ink);--bg:#fff;--mut:#586079;margin:0}
+.authr h2{font-size:1.6rem;margin-bottom:16px}
+@media(max-width:820px){.bar .wrap{flex-wrap:wrap;gap:0 10px;padding-top:8px}.tabs{order:3;flex:1 0 100%}.tabs button{padding:12px 11px 10px}#spacer{display:none}.logo{margin-right:auto}.authwrap{grid-template-columns:1fr}.hero-in{grid-template-columns:1fr}.hero .tiles{display:none}.srow,.two,.three{grid-template-columns:1fr}.who{display:none}.tabs button{padding:23px 9px 20px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<header class="bar"><div class="wrap">
+  <a class="logo" href="./" aria-label="Wakay home"><i class="mark">w</i>wakay</a>
+  <nav class="tabs hide" id="tabs" aria-label="Main"><button id="t1" class="on">Jobs</button><button id="t2">Applications</button><button id="t3">Profile</button><button id="t4">My CV</button></nav>
+  <span id="spacer"></span>
+  <span class="who" id="who"></span><button id="out" class="hide">Log out</button>
+</div></header>
+<p id="msg" role="status" aria-live="polite"></p>
 
-<section id="auth" class="box hide">
-  <b>Log in or create an account</b>
-  <div class="row"><input id="em" type="email" placeholder="Email" autocomplete="email"><input id="pw" type="password" placeholder="Password (6+ characters)" autocomplete="current-password"></div>
-  <div class="row"><button id="in" class="p">Log in</button><button id="up">Create account</button></div>
+<section id="auth" class="authwrap hide">
+  <div class="authl">
+    <div class="tiles" aria-hidden="true"><i>w</i><i>a</i><i>k</i><i>a</i><i>y</i></div>
+    <h1>Your job search, minus the noise.</h1>
+    <p>Roles from company career pages and remote job boards, sorted into the places you can actually work from.</p>
+    <ul class="perks"><li>New jobs six times a day</li><li>Email alerts for the roles you pick</li><li>A CV and cover letter tailored to each job</li></ul>
+  </div>
+  <div class="authr"><div class="panel">
+    <h2>Log in or create an account</h2>
+    <label class="f"><span>Email</span><input id="em" type="email" placeholder="you@example.com" autocomplete="email"></label>
+    <label class="f"><span>Password</span><input id="pw" type="password" placeholder="At least 6 characters" autocomplete="current-password"></label>
+    <div class="row"><button id="in" class="p">Log in</button><button id="up">Create account</button></div>
+    <p class="subtle" style="margin:14px 0 0">New here? Fill in both boxes and press Create account. We will email you a link to confirm it.</p>
+  </div></div>
 </section>
 
 <section id="app" class="hide">
-  <div class="tabs row"><button id="t1" class="on">Jobs</button><button id="t2">My applications</button><button id="t3">My profile</button><button id="t4">My CV</button></div>
-
-  <div id="v3" class="box hide">
-    <b>Which jobs should I show you?</b>
-    <div class="row"><input id="kw" placeholder="Roles, comma separated: e.g. graphic designer, ui designer, frontend"></div>
-    <div class="row">
-      <select id="lv"><option value="any">Any level</option><option value="junior">Junior / entry</option><option value="mid">Mid level</option><option value="senior">Senior / lead</option></select>
-    </div>
-    <div class="m" style="margin:12px 0 4px">Show me jobs open to:</div>
-    <div id="rg" class="chk">
-      <label><input type="checkbox" value="ng"> Nigeria (based in Nigeria)</label>
-      <label><input type="checkbox" value="africa"> Africa / EMEA</label>
-      <label><input type="checkbox" value="world"> Worldwide / anywhere</label>
-      <label><input type="checkbox" value="unspecified"> Remote, country not stated</label>
-      <label><input type="checkbox" value="other"> Other countries (restricted elsewhere)</label>
-    </div>
-    <label class="m"><input type="checkbox" id="al" checked> Email me new matching jobs</label>
-    <div class="row"><button id="sv" class="p">Save profile</button></div>
-  </div>
-
   <div id="v1">
-    <div class="row"><input id="q" placeholder="Search within your matches"><select id="s"><option value="">All sources</option><option value="__p">★ Priority 4 only</option></select><select id="lc"><option value="">My locations</option><option value="ng">Nigeria only</option><option value="africa">Africa / EMEA only</option><option value="world">Worldwide only</option><option value="unspecified">Remote, country not stated</option><option value="other">Other countries</option></select></div>
-    <label class="m"><input type="checkbox" id="all" style="flex:none;min-width:0"> Search all jobs (ignore my profile filters)</label>
-    <p class="sub" id="sub"></p><div id="list"></div><div class="row"><button id="more" class="hide">Show more</button></div>
+    <div class="hero"><div class="wrap hero-in">
+      <div>
+        <h1 id="hello">Hello.</h1>
+        <p class="lead" id="sub"></p>
+        <div class="searchcard">
+          <div class="srow"><input id="q" placeholder="Search titles or companies" aria-label="Search"><select id="lc" aria-label="Location group"><option value="">My locations</option><option value="ng">Nigeria only</option><option value="africa">Africa / EMEA only</option><option value="world">Worldwide only</option><option value="unspecified">Remote, country not stated</option><option value="other">Other countries</option></select><select id="s" aria-label="Source"><option value="">All sources</option><option value="__p">★ Priority 4 only</option></select></div>
+          <label class="chk1"><input type="checkbox" id="all"> Search all jobs, ignore my profile filters</label>
+        </div>
+      </div>
+      <div class="tiles" aria-hidden="true"><i>w</i><i>a</i><i>k</i><i>a</i><i>y</i></div>
+    </div></div>
+    <div class="wrap"><div id="list" class="grid"></div></div>
+    <div class="more"><button id="more" class="hide">Show more jobs</button></div>
   </div>
 
-  <div id="v2" class="hide"><div class="row"><select id="fs"><option value="">All statuses</option></select></div><div id="apps"></div></div>
+  <div id="v2" class="page wrap hide"><h2>Your applications</h2><p class="sub2" id="asub"></p>
+    <div class="two" style="max-width:420px;margin-bottom:6px"><select id="fs" aria-label="Filter by status"><option value="">All statuses</option></select></div>
+    <div id="apps" class="grid" style="padding-top:18px"></div></div>
 
-  <div id="v4" class="hide"><div class="box"><b>My CV and writing style</b>
-    <p class="m">Saved in this site's database under your login. Other users cannot see it, but the site owner can technically view stored data.</p>
-    <div class="row"><input id="fn" placeholder="Full name"><input id="ph" placeholder="Phone number"></div>
-    <div class="row"><input id="ad" placeholder="Address or city"><input id="li" placeholder="LinkedIn link (optional)"></div>
-    <div class="row"><input type="file" id="cvf" accept=".pdf,.docx,.txt"></div>
-    <textarea id="cv" style="min-height:220px" placeholder="Your CV as text. Upload a PDF or Word file above, or paste it here, then fix anything that looks odd."></textarea>
-    <textarea id="ws" style="min-height:120px" placeholder="Paste 1 to 3 things you have written (old cover letters or emails) so the AI can match your voice."></textarea>
-    <label class="m"><input type="checkbox" id="cs"> I understand that my CV and the job text, with my name, email, phone number and address removed, are sent to Google's free Gemini service, which may use them to improve its products and may have them read by human reviewers.</label>
-    <div class="row"><button id="svcv" class="p">Save</button></div></div></div>
+  <div id="v3" class="page wrap hide"><h2>Your profile</h2><p class="sub2">Tell Wakay what to look for. This shapes your Jobs page and your email alerts.</p>
+    <div class="panel">
+      <label class="f"><span>Roles you want (separate with commas)</span><input id="kw" placeholder="graphic design, brand designer, social media"></label>
+      <label class="f"><span>Level</span><select id="lv"><option value="any">Any level</option><option value="junior">Junior / entry</option><option value="mid">Mid level</option><option value="senior">Senior / lead</option></select></label>
+      <h3>Where can you work from?</h3>
+      <div id="rg" class="pills">
+        <label><input type="checkbox" value="ng"> Nigeria</label>
+        <label><input type="checkbox" value="africa"> Africa / EMEA</label>
+        <label><input type="checkbox" value="world"> Worldwide</label>
+        <label><input type="checkbox" value="unspecified"> Remote, country not stated</label>
+        <label><input type="checkbox" value="other"> Other countries</label>
+      </div>
+      <label class="opt"><input type="checkbox" id="al" checked> Email me when new matching jobs appear</label>
+      <div class="row"><button id="sv" class="p">Save profile</button></div>
+    </div></div>
 
-  <div id="v5" class="hide"><div class="box"><b id="gt"></b>
-    <textarea id="jd" style="min-height:150px;margin-top:10px" placeholder="Paste the full job description here."></textarea>
-    <div class="row"><button id="go" class="p">Tailor my CV and write a cover letter</button><button id="bk">Back</button></div></div>
-    <div id="res" class="box hide"><b>What I emphasised</b><p class="m" id="nt"></p>
-      <b>Layout for your downloads (A4)</b>
-      <div class="row"><select id="ft"><option>Times New Roman</option><option>Calibri</option><option>Arial</option><option>Cambria</option></select>
-      <label class="m">Font size (8 to 30) <input id="fz" type="number" min="8" max="30" value="12"></label></div>
-      <div class="row"><select id="mg"><option value="36">Narrow margins (1.3 cm)</option><option value="54" selected>Medium margins (1.9 cm)</option><option value="72">Normal margins (2.5 cm)</option><option value="90">Wide margins (3.2 cm)</option></select>
-      <select id="al"><option value="left">Body text aligned left</option><option value="justify">Body text justified</option></select>
-      <select id="or"><option value="portrait">Portrait page</option><option value="landscape">Landscape page</option></select></div>
-      <b>Tailored CV (you can edit it)</b><textarea id="ocv" style="min-height:280px"></textarea>
+  <div id="v4" class="page wrap hide"><h2>My CV and writing style</h2><p class="sub2">Upload your CV once. Wakay uses it, with your personal details removed, to tailor an application for each job. The more of your own writing you add, the more the cover letter sounds like you.</p>
+    <div class="panel">
+      <div class="two"><label class="f"><span>Full name</span><input id="fn" placeholder="As it appears on your CV"></label><label class="f"><span>Phone number</span><input id="ph"></label></div>
+      <div class="two"><label class="f"><span>Address or city</span><input id="ad"></label><label class="f"><span>LinkedIn link (optional)</span><input id="li"></label></div>
+      <label class="f"><span>Upload your CV (PDF, Word or text)</span><input type="file" id="cvf" accept=".pdf,.docx,.txt"></label>
+      <label class="f"><span>Your CV as text. Check it and fix anything that looks odd.</span><textarea id="cv" style="min-height:230px"></textarea></label>
+      <label class="f"><span>Your own writing: 1 to 3 old cover letters or emails</span><textarea id="ws" style="min-height:130px"></textarea></label>
+      <label class="opt"><input type="checkbox" id="cs"> <span>I understand that my CV and the job text, with my name, email, phone number and address removed, are sent to Google's free Gemini service, which may use them to improve its products and may have them read by human reviewers.</span></label>
+      <p class="subtle">Your CV is stored in this site's database under your login. Other users cannot see it, but the site owner can technically view stored data.</p>
+      <div class="row"><button id="svcv" class="p">Save</button></div>
+    </div></div>
+
+  <div id="v5" class="page wrap hide"><h2>Prepare application</h2><p class="sub2" id="gt"></p>
+    <div class="panel">
+      <label class="f"><span>Job description (filled in automatically when we have it)</span><textarea id="jd" style="min-height:170px"></textarea></label>
+      <div class="row"><button id="go" class="p">Tailor my CV and write a cover letter</button><button id="bk">Back to applications</button></div>
+    </div>
+    <div id="res" class="panel hide">
+      <h3>What I emphasised</h3><p id="nt" style="margin:0"></p>
+      <h3>Layout for your downloads (A4)</h3>
+      <div class="three"><label class="f"><span>Font</span><select id="ft"><option>Times New Roman</option><option>Calibri</option><option>Arial</option><option>Cambria</option></select></label>
+        <label class="f"><span>Font size (8 to 30)</span><input id="fz" type="number" min="8" max="30" value="12"></label>
+        <label class="f"><span>Page</span><select id="or"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label></div>
+      <div class="two"><label class="f"><span>Margins</span><select id="mg"><option value="36">Narrow (1.3 cm)</option><option value="54" selected>Medium (1.9 cm)</option><option value="72">Normal (2.5 cm)</option><option value="90">Wide (3.2 cm)</option></select></label>
+        <label class="f"><span>Body text</span><select id="aln"><option value="left">Aligned left</option><option value="justify">Justified</option></select></label></div>
+      <h3>Tailored CV (you can edit it)</h3><textarea id="ocv" style="min-height:300px"></textarea>
       <div class="row"><button data-dl="cv-pdf">CV as PDF</button><button data-dl="cv-doc">CV as Word</button></div>
-      <b>Cover letter (you can edit it)</b><textarea id="ocl" style="min-height:230px"></textarea>
-      <div class="row"><button data-dl="cl-pdf">Letter as PDF</button><button data-dl="cl-doc">Letter as Word</button></div></div></div>
+      <h3>Cover letter (you can edit it)</h3><textarea id="ocl" style="min-height:240px"></textarea>
+      <div class="row"><button data-dl="cl-pdf">Letter as PDF</button><button data-dl="cl-doc">Letter as Word</button></div>
+    </div>
+  </div>
 </section>
 
 <script>
@@ -98,9 +202,9 @@ const sb = supabase.createClient("https://qiddlgppfujcsjdlifbv.supabase.co","sb_
 const $=id=>document.getElementById(id), STAT=["Saved","Applied","Replied","Interview","Offer","Rejected"];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safe=u=>/^https?:\/\//i.test(u)?u:"#";
-let uid=null,user=null,prof={keywords:"",level:"any",region:"ng,africa,world,unspecified"},apps={},D=[],byUrl={},shown=100,upd="",last="";
+let booted=false,uid=null,user=null,prof={keywords:"",level:"any",region:"ng,africa,world,unspecified"},apps={},D=[],byUrl={},shown=100,upd="",last="";
 try{last=localStorage.getItem("seen")||""}catch(e){}
-const say=t=>{$("msg").textContent=t||"";if(t)window.scrollTo({top:0,behavior:"smooth"})};
+const say=t=>{$("msg").textContent=t||""};
 const ago=t=>{const h=(Date.now()-new Date(t))/36e5;return h<1?"just now":h<24?Math.floor(h)+"h ago":Math.floor(h/24)+"d ago"};
 
 // ---------- matching ----------
@@ -125,21 +229,26 @@ function match(j,skipRegion){
   return true}
 function setRegions(){const sel=regions();document.querySelectorAll("#rg input").forEach(i=>i.checked=sel.includes(i.value))}
 
+const tileIx=s=>[...(s||"?")].reduce((a,c)=>a+c.charCodeAt(0),0)%3,initial=s=>((s||"?").trim()[0]||"?").toUpperCase();
+function setHello(){const n=(prof.full_name||"").trim().split(/\s+/)[0],hr=new Date().getHours();
+  $("hello").textContent=(hr<12?"Good morning":hr<17?"Good afternoon":"Good evening")+(n?", "+n:"")+"."}
 // ---------- jobs list ----------
 function render(){
   const q=$("q").value.toLowerCase(),s=$("s").value;
   const L=D.filter(j=>($("all").checked||match(j,!!$("lc").value))&&(!$("lc").value||tags(j).includes($("lc").value))&&(!s||(s==="__p"?j.priority:j.source===s))&&(j.title+j.company).toLowerCase().includes(q));
-  $("sub").textContent=`${L.length} ${$("all").checked?"results":"matching"} of ${D.length} jobs. Last checked ${ago(upd)}.`;
-  $("list").innerHTML=L.slice(0,shown).map(j=>`<div class="job ${j.first_seen>last?"new":""}"><div>
-    <a href="${esc(safe(j.url))}" target="_blank" rel="noopener">${esc(j.title)}</a>${j.first_seen>last?' <span class="n">New</span>':""}
-    <div class="m">${esc(j.company)} · ${j.priority?"★ ":""}${esc(j.source)}${tags(j).map(t=>`<span class="tg">${LB[t]}</span>`).join("")} · ${esc(j.location.replace(/\b(remote)(\s+remote)+\b/ig,"Remote").trim()||"Location not listed")} · found ${ago(j.first_seen)}</div>
-    <div class="m"><a href="#" data-d="${esc(j.url)}">Show description</a></div><div class="desc hide"></div></div>
-    <button data-u="${esc(j.url)}">${apps[j.url]?"Saved ✓":"Save"}</button></div>`).join("")||"<p class='m'>No matching jobs. Try broader keywords in My profile.</p>";
+  $("sub").textContent=`${L.length.toLocaleString()} ${$("all").checked?"results from":"jobs match you out of"} ${D.length.toLocaleString()} listings. Last checked ${ago(upd)}.`;setHello();
+  $("list").innerHTML=L.slice(0,shown).map(j=>{const nw=j.first_seen>last,loc=j.location.replace(/\b(remote)(\s+remote)+\b/ig,"Remote").trim();
+    return `<article class="card ${nw?"new":""}"><div class="ch"><span class="tile t${tileIx(j.company)}">${esc(initial(j.company))}</span>
+    <div class="ct"><a class="title" href="${esc(safe(j.url))}" target="_blank" rel="noopener">${esc(j.title)}</a><div class="co">${esc(j.company)}</div></div>
+    <button class="save ${apps[j.url]?"on":""}" data-u="${esc(j.url)}">${apps[j.url]?"Saved":"Save"}</button></div>
+    <div class="chips"><span class="chip ${j.priority?"star":""}">${j.priority?"★ ":""}${esc(j.source)}</span>${tags(j).map(t=>`<span class="chip g-${t}">${LB[t]}</span>`).join("")}${nw?'<span class="chip new">New</span>':""}</div>
+    <div class="loc">${esc(loc||"Location not listed")}</div>
+    <div class="cf"><span>Found ${ago(j.first_seen)}</span><a href="#" data-d="${esc(j.url)}">Show description</a></div><div class="desc hide"></div></article>`}).join("")||'<div class="empty"><b>Nothing matches yet.</b>Try broader roles in your profile, or tick "Search all jobs".</div>';
   $("more").classList.toggle("hide",L.length<=shown);
 }
 const dc={};async function getDesc(u){if(u in dc)return dc[u];const {data}=await sb.from("job_descriptions").select("description").eq("url",u).maybeSingle();return dc[u]=data?.description||""}
 $("list").onclick=async e=>{const d=e.target.dataset?.d;
-  if(d){e.preventDefault();const box=e.target.closest(".job").querySelector(".desc");
+  if(d){e.preventDefault();const box=e.target.closest(".card").querySelector(".desc");
     if(!box.classList.contains("hide")){box.classList.add("hide");e.target.textContent="Show description";return}
     box.classList.remove("hide");e.target.textContent="Hide description";
     if(!box.dataset.l){box.textContent="Loading...";box.textContent=(await getDesc(d))||"No description saved for this job yet. Open the job link to read it.";box.dataset.l=1}
@@ -152,10 +261,13 @@ $("more").onclick=()=>{shown+=100;render()};$("q").oninput=$("s").onchange=$("al
 // ---------- tracker ----------
 function renderApps(){
   const f=$("fs").value,L=Object.values(apps).filter(a=>!f||a.status===f).sort((a,b)=>a.updated_at<b.updated_at?1:-1);
-  $("apps").innerHTML=L.map(a=>`<div class="box" data-id="${a.id}"><a href="${esc(safe(a.job_url))}" target="_blank" rel="noopener"><b>${esc(a.title)}</b></a>
-    <div class="m">${esc(a.company||"")} · ${esc(a.source||"")}</div>
-    <div class="row"><select data-st>${STAT.map(s=>`<option ${s===a.status?"selected":""}>${s}</option>`).join("")}</select><button data-prep>Prepare application</button><button data-rm>Remove</button></div>
-    <textarea data-nt placeholder="Notes: contact, dates, what you sent...">${esc(a.notes)}</textarea></div>`).join("")||"<p class='m'>Nothing here yet. Press Save on a job.</p>";
+  const tot=Object.values(apps);
+  $("asub").textContent=tot.length?`${tot.length} ${tot.length===1?"job":"jobs"} in your tracker: `+STAT.filter(s=>tot.some(a=>a.status===s)).map(s=>`${tot.filter(a=>a.status===s).length} ${s.toLowerCase()}`).join(", ")+".":"Press Save on a job in the Jobs tab and it will show up here.";
+  $("apps").innerHTML=L.map(a=>`<article class="card" data-id="${a.id}"><div class="ch"><span class="tile t${tileIx(a.company||a.title)}">${esc(initial(a.company||a.title))}</span>
+    <div class="ct"><a class="title" href="${esc(safe(a.job_url))}" target="_blank" rel="noopener">${esc(a.title)}</a><div class="co">${esc(a.company||"")}</div></div><span class="chip st-${esc(a.status)}">${esc(a.status)}</span></div>
+    <div class="row" style="margin:0"><select data-st aria-label="Status">${STAT.map(s=>`<option ${s===a.status?"selected":""}>${s}</option>`).join("")}</select><button class="p" data-prep>Prepare application</button></div>
+    <textarea data-nt placeholder="Notes: contact, dates, what you sent...">${esc(a.notes)}</textarea>
+    <div class="cf"><span>${esc(a.source||"")}</span><button data-rm style="padding:4px 10px;font-size:.8rem">Remove</button></div></article>`).join("")||'<div class="empty"><b>Nothing here yet.</b>Press Save on a job in the Jobs tab.</div>';
 }
 async function patch(id,fields){const {data,error}=await sb.from("applications").update({...fields,updated_at:new Date().toISOString()}).eq("id",id).select().single();
   if(error)return say(error.message);apps[data.job_url]=data}
@@ -229,13 +341,13 @@ async function pdfFace(doc,f){const F=FONTS[f];if(!F.ttf)return F.pdf;
   doc.addFileToVFS(F.pdf+"-r.ttf",await b64(FB+F.ttf[0]));doc.addFont(F.pdf+"-r.ttf",F.pdf,"normal");
   doc.addFileToVFS(F.pdf+"-b.ttf",await b64(FB+F.ttf[1]));doc.addFont(F.pdf+"-b.ttf",F.pdf,"bold");return F.pdf}
 const fsz=()=>Math.min(30,Math.max(8,Math.round(+$("fz").value)||12));
-function applyFont(){const F=FONTS[$("ft").value];["ocv","ocl"].forEach(i=>{$(i).style.fontFamily=F.css;$(i).style.fontSize=fsz()+"pt";$(i).style.textAlign=$("al").value==="justify"?"justify":"left"})}
-try{for(const k of ["ft","fz","mg","al","or"]){const v=localStorage.getItem(k);if(v!==null&&(k!=="ft"||FONTS[v]))$(k).value=v}}catch(e){}
-["ft","fz","mg","al","or"].forEach(k=>$(k).onchange=()=>{try{localStorage.setItem(k,$(k).value)}catch(e){}applyFont()});
+function applyFont(){const F=FONTS[$("ft").value];["ocv","ocl"].forEach(i=>{$(i).style.fontFamily=F.css;$(i).style.fontSize=fsz()+"pt";$(i).style.textAlign=$("aln").value==="justify"?"justify":"left"})}
+try{for(const k of ["ft","fz","mg","aln","or"]){const v=localStorage.getItem(k);if(v!==null&&(k!=="ft"||FONTS[v]))$(k).value=v}}catch(e){}
+["ft","fz","mg","aln","or"].forEach(k=>$(k).onchange=()=>{try{localStorage.setItem(k,$(k).value)}catch(e){}applyFont()});
 applyFont();
 const heads=lines=>{const h=[];lines.forEach((l,i)=>{if(l.trim()&&h.length<2)h.push(i)});return h}; // first two non-empty lines = name + contact line
 
-async function toPdf(text,name,cvStyle){const f=$("ft").value,fs=fsz(),M=+$("mg").value,just=$("al").value==="justify",{jsPDF}=window.jspdf,doc=new jsPDF({unit:"pt",format:"a4",orientation:$("or").value});
+async function toPdf(text,name,cvStyle){const f=$("ft").value,fs=fsz(),M=+$("mg").value,just=$("aln").value==="justify",{jsPDF}=window.jspdf,doc=new jsPDF({unit:"pt",format:"a4",orientation:$("or").value});
   let face;try{face=await pdfFace(doc,f)}catch(e){face="times";say("I could not load "+f+" for the PDF, so I used Times New Roman. Check your connection and try again.")}
   doc.setLineHeightFactor(1.3);
   const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),mw=W-2*M,L=text.split("\n"),hd=cvStyle?heads(L):[];let y=M;
@@ -256,7 +368,7 @@ async function toPdf(text,name,cvStyle){const f=$("ft").value,fs=fsz(),M=+$("mg"
   doc.save(name)}
 async function toDocx(text,name,cvStyle){
   if(!window.docx){say("The Word builder could not load. Check your connection and try again, or use the PDF.");return}
-  const D=window.docx,f=$("ft").value,fs=fsz(),M=+$("mg").value*20,just=$("al").value==="justify",land=$("or").value==="landscape";
+  const D=window.docx,f=$("ft").value,fs=fsz(),M=+$("mg").value*20,just=$("aln").value==="justify",land=$("or").value==="landscape";
   const font={ascii:f,hAnsi:f,eastAsia:f,cs:f},L=text.split("\n"),hd=cvStyle?heads(L):[],jus=just?D.AlignmentType.JUSTIFIED:D.AlignmentType.LEFT,P=[];
   L.forEach((raw,i)=>{const ln=raw.trim();if(!ln)return;
     if(ln.startsWith("- "))P.push(new D.Paragraph({numbering:{reference:"bul",level:0},alignment:jus,spacing:{after:60},children:[new D.TextRun({text:ln.slice(2)})]}));
@@ -288,8 +400,8 @@ $("up").onclick=async()=>{say("Working...");const {data,error}=await sb.auth.sig
 $("out").onclick=()=>sb.auth.signOut();
 
 async function start(session){
-  user=session?.user||null;uid=user?user.id:null;
-  $("auth").classList.toggle("hide",!!user);$("app").classList.toggle("hide",!user);$("out").classList.toggle("hide",!user);$("who").textContent=user?user.email:"";
+  booted=true;user=session?.user||null;uid=user?user.id:null;
+  $("auth").classList.toggle("hide",!!user);$("app").classList.toggle("hide",!user);$("out").classList.toggle("hide",!user);$("tabs").classList.toggle("hide",!user);$("who").textContent=user?user.email:"";
   if(!user)return;
   const [p,a,j]=await Promise.all([sb.from("profiles").select("*").eq("user_id",user.id).maybeSingle(),sb.from("applications").select("*"),fetch("jobs.json?"+Date.now()).then(r=>r.json())]);
   if(p.data)prof=p.data;apps={};(a.data||[]).forEach(x=>apps[x.job_url]=x);
@@ -300,6 +412,6 @@ async function start(session){
   try{localStorage.setItem("seen",j.updated)}catch(e){}
 }
 // only reload when the person actually changes (tab refocus/token refresh must not reset the page)
-sb.auth.onAuthStateChange((_e,s)=>setTimeout(()=>{if((s?.user?.id||null)!==uid)start(s)},0));
-sb.auth.getSession().then(({data})=>{if((data.session?.user?.id||null)!==uid)start(data.session)});
+sb.auth.onAuthStateChange((_e,s)=>setTimeout(()=>{if(!booted||(s?.user?.id||null)!==uid)start(s)},0));
+sb.auth.getSession().then(({data})=>{if(!booted||(data.session?.user?.id||null)!==uid)start(data.session)});
 </script></main></body></html>
