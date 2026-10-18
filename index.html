@@ -432,9 +432,13 @@ $("res").onclick=async e=>{const k=e.target.dataset?.dl;if(!k)return;
 function tab(n){[1,2,3,4,5,6].forEach(i=>{$("v"+i).classList.toggle("hide",i!==n);$("t"+i)?.classList.toggle("on",i===n)});
   if(n===1)render();if(n===2)renderApps()}
 [1,2,3,4,6].forEach(i=>$("t"+i).onclick=()=>{say();tab(i)});
-$("in").onclick=async()=>{say("Working...");const {error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});say(error?error.message:"")};
+const nice=m=>/rate limit|too many/i.test(m)?"Too many emails have been requested just now. Please wait about an hour and try again, and press the button only once.":
+  /email not confirmed/i.test(m)?"Please confirm your email first: open the link we sent you, then log in.":
+  /invalid login/i.test(m)?"That email and password do not match. Try again, or press Forgot password.":
+  /not authorized|not allowed/i.test(m)?"We could not send an email to that address yet. Please try again later.":m;
+$("in").onclick=async()=>{say("Working...");const {error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});say(error?nice(error.message):"")};
 $("up").onclick=async()=>{say("Working...");const {data,error}=await sb.auth.signUp({email:$("em").value.trim(),password:$("pw").value,options:{emailRedirectTo:back}});
-  if(error)return say(error.message);
+  if(error)return say(nice(error.message));
   if(data.user&&data.user.identities&&data.user.identities.length===0)return say("This email already has an account. Log in, or press Forgot password.");
   say(data.session?"":"Almost there. Check your email (and the spam folder) for the confirmation link, then log in.")};
 $("shp").onchange=()=>{$("pw").type=$("shp").checked?"text":"password"};
@@ -454,7 +458,7 @@ async function social(provider,name){say("Opening "+name+"...");
 $("gg").onclick=()=>social("google","Google");$("gh").onclick=()=>social("github","GitHub");
 $("fg").onclick=async()=>{const e=$("em").value.trim();if(!e)return say("Type your email in the Email box first, then press Forgot password.");
   const {error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:back});
-  say(error?error.message:"If that email has an account, a reset link is on its way. Check your spam folder too.")};
+  say(error?nice(error.message):"Reset link sent to "+e+". Open that email, press the button inside, and it will bring you back here to choose a new password. Check your spam folder too.")};
 function showRec(){$("auth").classList.remove("hide");$("app").classList.add("hide");$("tabs").classList.add("hide");$("out").classList.add("hide");$("login").classList.add("hide");$("rec").classList.remove("hide");say("Choose a new password to finish.")}
 $("sp").onclick=async()=>{const p=$("np").value;if(p.length<6)return say("Use at least 6 characters.");
   const {error}=await sb.auth.updateUser({password:p});if(error)return say(error.message);
