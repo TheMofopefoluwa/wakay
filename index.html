@@ -242,7 +242,9 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const safe=u=>/^https?:\/\//i.test(u)?u:"#";
 let recovering=/type=recovery/.test(location.hash),booted=false,uid=null,user=null,prof={keywords:"",level:"any",region:"ng,africa,world,unspecified"},apps={},D=[],byUrl={},shown=100,upd="",last="";
 try{last=localStorage.getItem("seen")||""}catch(e){}
-const say=t=>{$("msg").textContent=t||""};
+let msgT;const say=t=>{clearTimeout(msgT);$("msg").textContent=t||"";
+  if(t)msgT=setTimeout(()=>{$("msg").textContent=""},/\.\.\.$/.test(t)?120000:Math.min(9000,Math.max(2500,1500+t.length*45)))};
+$("msg").onclick=()=>say("");
 const ago=t=>{const h=(Date.now()-new Date(t))/36e5;return h<1?"just now":h<24?Math.floor(h)+"h ago":Math.floor(h/24)+"d ago"};
 
 // ---------- matching ----------
@@ -317,7 +319,7 @@ $("apps").onclick=async e=>{if(e.target.matches("[data-prep]")){openGen(+e.targe
 $("fs").onchange=renderApps;STAT.forEach(s=>$("fs").add(new Option(s,s)));
 
 // ---------- profile ----------
-$("sv").onclick=async()=>{prof={keywords:$("kw").value,level:$("lv").value,region:[...document.querySelectorAll("#rg input:checked")].map(i=>i.value).join(","),email_alerts:$("al").checked};
+$("sv").onclick=async()=>{prof={...prof,keywords:$("kw").value,level:$("lv").value,region:[...document.querySelectorAll("#rg input:checked")].map(i=>i.value).join(","),email_alerts:$("al").checked};
   const {error}=await sb.from("profiles").upsert({user_id:user.id,...prof,email:user.email,updated_at:new Date().toISOString()});
   say(error?error.message:"Profile saved.");if(!error){shown=100;tab(1)}};
 
@@ -354,8 +356,9 @@ function openGen(id){cur=Object.values(apps).find(a=>a.id===id);if(!cur)return;
   $("gt").textContent=cur.title+" at "+(cur.company||"");$("jd").value="";$("res").classList.add("hide");say();tab(5);getDesc(cur.job_url).then(t=>{if(t&&!$("jd").value.trim())$("jd").value=t})}
 $("bk").onclick=()=>tab(2);
 $("go").onclick=async()=>{const jd=$("jd").value.trim();
-  if(!prof.cv_text)return say("Add your CV first, in My CV.");
-  if(!prof.ai_consent_at)return say("Tick the consent box in My CV and save first.");
+  if(!prof.cv_text){tab(4);return say("Add your CV first, then press Save.")}
+  if(!prof.full_name){tab(4);return say("Add your full name first, so it can be removed before anything is sent.")}
+  if(!prof.ai_consent_at){tab(4);return say("Tick the consent box and press Save first.")}
   if(jd.length<80)return say("Paste the full job description first.");
   $("go").disabled=true;say("Writing your documents. This can take up to a minute...");
   try{const {data:{session}}=await sb.auth.getSession();
