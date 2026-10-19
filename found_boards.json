@@ -51,7 +51,6 @@
   "a3c41b8b71eff8c4",
   "aacpnw",
   "abacusinsights",
-  "abakaai",
   "abclegalservices",
   "abinbev",
   "able",
@@ -315,7 +314,9 @@
   "nutrafol",
   "pistontechnologies",
   "tactacam",
-  "tollbit"
+  "tollbit",
+  "twilio",
+  "movableink"
  ],
  "lever": [
   "TrilogyFederal",
@@ -982,6 +983,12 @@
   "focus",
   "tremendous",
   "Injective",
-  "mobbin.com"
+  "mobbin.com",
+  "eleve-talent",
+  "tiny-health",
+  "whitecircle",
+  "coralai",
+  "splitmetrics",
+  "improbable"
  ]
 }
