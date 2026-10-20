@@ -525,7 +525,8 @@
   "fullscript",
   "trellis",
   "wise-integration",
-  "teramind"
+  "teramind",
+  "2A"
  ],
  "ashby": [
   "1password",
@@ -1027,6 +1028,8 @@
   "nango",
   "peec",
   "pragmatike",
-  "voicemod"
+  "voicemod",
+  "spruceid",
+  "supabase"
  ]
 }
