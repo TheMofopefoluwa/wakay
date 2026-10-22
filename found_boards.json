@@ -360,7 +360,10 @@
   "its",
   "appier",
   "veeamsoftware",
-  "dkbcodefactory"
+  "dkbcodefactory",
+  "cookunity",
+  "materialbank",
+  "coreweave"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1068,6 +1071,9 @@
   "supabase",
   "whippy",
   "stedi",
-  "umbrel"
+  "umbrel",
+  "clarium",
+  "kin",
+  "workos"
  ]
 }
