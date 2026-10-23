@@ -369,7 +369,8 @@
   "sproutsocial",
   "mavenclinic",
   "codeorg",
-  "classpass"
+  "classpass",
+  "cardata"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1083,6 +1084,8 @@
   "kin",
   "workos",
   "Rosabella",
-  "jane"
+  "jane",
+  "serverobotics",
+  "bayesianhealth"
  ]
 }
