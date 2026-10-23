@@ -267,7 +267,6 @@
   "amplemarket",
   "malbon",
   "forbes",
-  "143studiosinc",
   "1stdibscom",
   "aavaa",
   "absolicsinc",
@@ -370,7 +369,8 @@
   "mavenclinic",
   "codeorg",
   "classpass",
-  "cardata"
+  "cardata",
+  "peoplefinders"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1089,6 +1089,9 @@
   "bayesianhealth",
   "trm-labs",
   "second-nature",
-  "hellobrightline"
+  "hellobrightline",
+  "pencil",
+  "temporal",
+  "lumin-digital"
  ]
 }
