@@ -370,7 +370,12 @@
   "codeorg",
   "classpass",
   "cardata",
-  "peoplefinders"
+  "peoplefinders",
+  "yipitdata",
+  "weedmaps77",
+  "opportunityeducation",
+  "eucalyptus",
+  "scanner"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1094,6 +1099,7 @@
   "temporal",
   "lumin-digital",
   "casperstudios",
-  "elliptic"
+  "elliptic",
+  "current-advisors"
  ]
 }
