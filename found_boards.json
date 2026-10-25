@@ -381,7 +381,10 @@
   "spacex",
   "rushstreetinteractive",
   "planetscale",
-  "pubmatic"
+  "pubmatic",
+  "jumio",
+  "Instacart",
+  "careaccess"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1127,6 +1130,11 @@
   "voodoo",
   "kira",
   "pod-network",
-  "mangomint"
+  "mangomint",
+  "patreon",
+  "popl",
+  "kaizenlabs",
+  "TaptapSend",
+  "homebound"
  ]
 }
