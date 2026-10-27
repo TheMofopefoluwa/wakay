@@ -407,7 +407,10 @@
   "datadog",
   "garnerhealth",
   "beyondfinance",
-  "chainguard"
+  "chainguard",
+  "wizinc",
+  "ithaka",
+  "lastpass"
  ],
  "lever": [
   "TrilogyFederal",
@@ -631,7 +634,10 @@
   "Academy",
   "layup",
   "catena-clearing",
-  "hive"
+  "hive",
+  "glass-health-inc",
+  "freedompay",
+  "magnals"
  ],
  "ashby": [
   "1password",
@@ -895,7 +901,6 @@
   "playlab",
   "mend-io",
   "duna",
-  "va4u",
   "sanity",
   "ultralytics",
   "recraft",
