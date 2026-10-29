@@ -439,7 +439,10 @@
   "hyreo",
   "cie",
   "caseguard",
-  "ascenttechnologies"
+  "ascenttechnologies",
+  "penninteractive",
+  "fleetio",
+  "hummingbirdregtech"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1239,6 +1242,8 @@
   "astra",
   "docker",
   "sound.xyz",
-  "harvey"
+  "harvey",
+  "tabbed",
+  "tradingspace"
  ]
 }
