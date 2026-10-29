@@ -429,7 +429,11 @@
   "perpay",
   "hopscotchprimarycare",
   "horacemannservicecorporation",
-  "machinifyinc"
+  "machinifyinc",
+  "impiricus",
+  "fluxon",
+  "paypaycard",
+  "pingidentity"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1223,6 +1227,12 @@
   "blockstream",
   "office-hours",
   "bunch",
-  "ElevenLabs"
+  "ElevenLabs",
+  "resend",
+  "silver",
+  "astra",
+  "docker",
+  "sound.xyz",
+  "harvey"
  ]
 }
