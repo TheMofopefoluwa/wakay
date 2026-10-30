@@ -448,7 +448,8 @@
   "fueledcareers",
   "klaviyo",
   "talkdesk2",
-  "block"
+  "block",
+  "minitab"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1249,6 +1250,8 @@
   "tabbed",
   "tradingspace",
   "molecule",
-  "stable"
+  "stable",
+  "easysoft",
+  "wayflyer"
  ]
 }
