@@ -445,7 +445,10 @@
   "hummingbirdregtech",
   "oscar",
   "ever",
-  "fueledcareers"
+  "fueledcareers",
+  "klaviyo",
+  "talkdesk2",
+  "block"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1248,6 +1251,7 @@
   "sound.xyz",
   "harvey",
   "tabbed",
-  "tradingspace"
+  "tradingspace",
+  "molecule"
  ]
 }
