@@ -685,7 +685,11 @@
   "pushsecurity",
   "airalo",
   "rapidai",
-  "workwave"
+  "workwave",
+  "foodsmart",
+  "versapay",
+  "elfbeauty",
+  "pditechnologies"
  ],
  "ashby": [
   "1password",
@@ -1256,6 +1260,8 @@
   "molecule",
   "stable",
   "easysoft",
-  "wayflyer"
+  "wayflyer",
+  "hirehire",
+  "clipboard"
  ]
 }
