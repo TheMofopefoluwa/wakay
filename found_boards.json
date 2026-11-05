@@ -475,7 +475,8 @@
   "ritual",
   "lindawernerassociates",
   "businessolverinvitationonly",
-  "maymobility"
+  "maymobility",
+  "surtai"
  ],
  "lever": [
   "TrilogyFederal",
@@ -1325,6 +1326,9 @@
   "schoolhouse-world",
   "yadda",
   "justDice",
-  "spade"
+  "spade",
+  "darkroom",
+  "Voldex",
+  "monarchmoney"
  ]
 }
