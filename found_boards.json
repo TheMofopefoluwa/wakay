@@ -367,7 +367,6 @@
   "sproutsocial",
   "mavenclinic",
   "codeorg",
-  "classpass",
   "cardata",
   "peoplefinders",
   "yipitdata",
@@ -1399,6 +1398,8 @@
   "wearebeyondsports",
   "realitydefender",
   "vio",
-  "newtonx"
+  "newtonx",
+  "roboflow",
+  "baseten"
  ]
 }
