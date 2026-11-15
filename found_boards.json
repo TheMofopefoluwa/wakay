@@ -389,7 +389,6 @@
   "zoo",
   "assail",
   "upgrade",
-  "aisquared",
   "finitestate",
   "hypori",
   "prenuvo",
@@ -1413,6 +1412,7 @@
   "synthetic",
   "futurefitai",
   "prudentia-sciences",
-  "tilla"
+  "tilla",
+  "terraai"
  ]
 }
