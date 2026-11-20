@@ -804,7 +804,9 @@
   "Ionicpartners",
   "baselane",
   "fours",
-  "lalamove"
+  "lalamove",
+  "zeneducate",
+  "ellevationeducation"
  ],
  "ashby": [
   "1password",
@@ -1453,6 +1455,8 @@
   "voldex",
   "radiant",
   "shield",
-  "wellbeam"
+  "wellbeam",
+  "turquoise-health",
+  "develop-health"
  ]
 }
