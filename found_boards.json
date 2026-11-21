@@ -523,7 +523,11 @@
   "genea",
   "kettle",
   "vailexa",
-  "wikimedia"
+  "wikimedia",
+  "donorbox",
+  "domains",
+  "pirateship",
+  "appdirect"
  ],
  "lever": [
   "TrilogyFederal",
@@ -809,7 +813,8 @@
   "zeneducate",
   "ellevationeducation",
   "aerostrat",
-  "curai"
+  "curai",
+  "deuna"
  ],
  "ashby": [
   "1password",
