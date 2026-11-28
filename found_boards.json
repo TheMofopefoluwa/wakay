@@ -838,7 +838,8 @@
   "everlywell",
   "foundation-llm-technologies",
   "inductivehealth",
-  "SimbeRobotics"
+  "SimbeRobotics",
+  "BTSE"
  ],
  "ashby": [
   "1password",
@@ -1501,6 +1502,7 @@
   "gen-digital",
   "quartermaster",
   "rocketsciencegg",
-  "oxman"
+  "oxman",
+  "span.app"
  ]
 }
